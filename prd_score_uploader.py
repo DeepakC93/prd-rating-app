@@ -70,7 +70,7 @@ def generate_pdf(data, filename):
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
     total_width = 277 - 20
     base_width = total_width / len(table_headers)
-    col_widths = [base_width] * len(table_headers)
+    col_widths = [base_width + 2 if i == 0 else base_width for i in range(len(table_headers))]  # widen the first column
 
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
@@ -87,7 +87,7 @@ def generate_pdf(data, filename):
             pdf.set_xy(x_start, y_before)
             pdf.set_fill_color(200, 200, 200)
             y_cell_start = pdf.get_y()
-            pdf.multi_cell(col_widths[i], 5, _sanitize_text(h), border=1, align='C', fill=True)
+            pdf.multi_cell(col_widths[i], 6, _sanitize_text(h), border=1, align='C', fill=True)
             y_cell_end = pdf.get_y()
             header_cells.append(y_cell_end - y_cell_start)
             max_height = max(max_height, y_cell_end - y_cell_start)
