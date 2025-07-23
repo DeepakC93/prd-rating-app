@@ -61,9 +61,9 @@ def _sanitize_text(text):
     return str(text).encode("latin-1", "ignore").decode("latin-1")
 
 def get_color(score):
-    if score >= 1.5:
+    if score >= 9:
         return (0, 200, 0)  # Green
-    elif score >= 0.5:
+    elif score >= 6:
         return (255, 165, 0)  # Orange
     else:
         return (255, 0, 0)  # Red
@@ -126,9 +126,10 @@ def generate_pdf(data, filename):
         for i, key in enumerate(weights):
             valid_vals = group[key].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
             avg_val = valid_vals.mean() if not valid_vals.empty else 0
-            r, g, b = get_color(avg_val)
-            pdf.set_fill_color(r, g, b)
+            pdf.set_fill_color(220, 220, 220)  # Neutral fill for parameter averages
             pdf.cell(col_widths[i+1], 8, f"{avg_val:.2f}", 1, 0, 'C', fill=True)
+
+        # Only apply color coding to the last total column
         r, g, b = get_color(avg)
         pdf.set_fill_color(r, g, b)
         pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
