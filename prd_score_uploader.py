@@ -3,6 +3,7 @@ import pandas as pd
 from fpdf import FPDF
 import tempfile
 import os
+from PIL import Image
 
 # Canonical parameter aliases to standardize header names
 canonical_params = {
@@ -153,6 +154,14 @@ def generate_pdf(data, filename):
 
 # Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
+
+# Show logo in center
+logo = Image.open("logo.png")
+with st.container():
+    st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+    st.image(logo, width=150)
+    st.markdown("</div>", unsafe_allow_html=True)
+
 st.title("\U0001F4CA PRD Rating Report Generator")
 st.markdown("Upload the PRD score sheet (CSV or Excel) and get the report in PDF format.")
 
