@@ -119,7 +119,6 @@ def generate_pdf(data, filename):
                 pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
             pdf.ln()
 
-        # Averages row
         pdf.set_fill_color(220, 220, 220)
         pdf.set_font("Arial", style='B', size=9)
         pdf.cell(col_widths[0], 8, "Avg", 1, 0, 'C', fill=True)
@@ -134,7 +133,6 @@ def generate_pdf(data, filename):
         pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
         pdf.ln(10)
 
-        # Add rationale for low score
         if avg < 7:
             lowest = []
             for param in weights:
@@ -147,7 +145,7 @@ def generate_pdf(data, filename):
                 reasons = ", ".join(lowest)
                 pdf.set_text_color(255, 0, 0)
                 pdf.set_font("Arial", style='', size=9)
-                pdf.multi_cell(0, 8, f"\nNote: This PRD scored low mainly due to weak performance in: {reasons}.")
+                pdf.multi_cell(0, 8, f"\nNote: This PRD's score appears to be on the lower side, mainly due to relatively lower ratings in: {reasons}.")
                 pdf.set_text_color(0, 0, 0)
 
     pdf.output(filename)
@@ -201,6 +199,8 @@ if uploaded_file is not None:
         all_scores.append(scores)
 
     result_df = pd.DataFrame(all_scores)
+    result_df = result_df[['PRD Name', 'Role'] + [col for col in result_df.columns if col not in ['PRD Name', 'Role']]]
+
     st.subheader("🔍 Converted Score Table")
     st.dataframe(result_df)
 
