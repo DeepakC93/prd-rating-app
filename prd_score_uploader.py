@@ -178,7 +178,12 @@ if uploaded_file is not None:
     result_df = result_df[['PRD Name', 'Role'] + [col for col in result_df.columns if col not in ['PRD Name', 'Role']]]
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-        generate_html_report(result_df, tmp.name)
+        html_output = generate_html_report(result_df, tmp.name)
+
+        # Show HTML inside Streamlit
+        st.components.v1.html(html_output, height=1000, scrolling=True)
+
+        # Download Button
         st.download_button(
             label="\U0001F4C4 Download HTML Report",
             data=open(tmp.name, "rb").read(),
