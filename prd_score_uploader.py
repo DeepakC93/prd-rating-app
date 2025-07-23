@@ -58,7 +58,7 @@ def generate_pdf(data, filename):
     pdf.ln(10)
 
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
-    col_widths = [35, 40, 40, 38, 55, 55, 55, 30]  # Slightly increased column widths
+    col_widths = [40, 45, 45, 43, 60, 60, 60, 35]  # Adjusted for better balance
 
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
@@ -67,20 +67,25 @@ def generate_pdf(data, filename):
         pdf.cell(200, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
         pdf.set_font("Arial", size=10)
 
-        # Header Row with increased width
+        # Header Row with auto-wrap and proper alignment
         y_before = pdf.get_y()
         x_start = pdf.get_x()
 
-        max_height = 10
-        header_cells = []
+        max_height = 0
         for i, h in enumerate(table_headers):
             pdf.set_xy(x_start, y_before)
             pdf.set_fill_color(200, 200, 200)
-            height = pdf.multi_cell(col_widths[i], 5, _sanitize_text(h), border=1, align='C', fill=True)
-            header_cells.append(height)
+
+            y_cell_start = pdf.get_y()
+            pdf.multi_cell(col_widths[i], 5, _sanitize_text(h), border=1, align='C', fill=True)
+            y_cell_end = pdf.get_y()
+
+            cell_height = y_cell_end - y_cell_start
+            max_height = max(max_height, cell_height)
+
             x_start += col_widths[i]
 
-        pdf.set_y(y_before + max(header_cells))
+        pdf.set_y(y_before + max_height)
 
         # Data Rows
         for _, row in group.iterrows():
