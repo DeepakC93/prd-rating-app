@@ -60,7 +60,6 @@ def convert_to_score(row):
 
 def generate_pdf(data, filename):
     overall_avg = data['Total Score'].mean()
-    mood_image_path = "mood_images/happy.png" if overall_avg >= 9 else "mood_images/meh.png" if overall_avg >= 6 else "mood_images/sad.png"
 
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
@@ -68,7 +67,6 @@ def generate_pdf(data, filename):
     pdf.cell(200, 10, txt="PRD Rating Report", ln=True, align='C')
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt=f"Overall Average Score: {overall_avg:.2f}", ln=True, align='C')
-    pdf.image(mood_image_path, x=55, w=100)
     pdf.ln(10)
 
     # Summary Section: List of PRDs with average scores
