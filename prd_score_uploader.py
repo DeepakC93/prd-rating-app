@@ -12,6 +12,8 @@ canonical_params = {
     "requirement changes post handover": "Requirement changes post handover",
     "completeness of requirement coverage": "Completeness of Requirement Coverage",
     "depth of tech understanding delivered": "Depth of tech Understanding Delivered",
+    "prd name": "PRD Name",
+    "role": "Role",
 }
 
 # Mapping for textual ratings to numeric scores
@@ -92,10 +94,16 @@ if uploaded_file is not None:
 
     df.rename(columns=rename_dict, inplace=True)
 
-    # Normalize the relevant cells for scoring
+    # Normalize relevant scoring cells
     for canon in weights.keys():
         if canon in df.columns:
             df[canon] = df[canon].astype(str).str.strip().str.lower()
+
+    # Normalize PRD Name and Role columns too
+    if 'PRD Name' in df.columns:
+        df['PRD Name'] = df['PRD Name'].astype(str).str.strip()
+    if 'Role' in df.columns:
+        df['Role'] = df['Role'].astype(str).str.strip()
 
     st.success("File uploaded and normalized!")
 
