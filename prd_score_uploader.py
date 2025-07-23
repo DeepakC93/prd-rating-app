@@ -78,7 +78,7 @@ st.set_page_config(page_title="PRD Rating Report Generator")
 
 # Centered and resized logo display
 logo = Image.open("logo.png")
-logo.thumbnail((80, 80))  # Smaller logo size
+logo.thumbnail((60, 60))  # Smaller logo size
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.image(logo, use_container_width=True)
