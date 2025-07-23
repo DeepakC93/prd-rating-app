@@ -1,4 +1,4 @@
-""import streamlit as st
+import streamlit as st
 import pandas as pd
 from fpdf import FPDF
 import tempfile
@@ -78,7 +78,7 @@ st.set_page_config(page_title="PRD Rating Report Generator")
 
 # Centered and resized logo display
 logo = Image.open("logo.png")
-logo.thumbnail((200, 200))  # Resize the logo
+logo.thumbnail((100, 100))  # Smaller logo size
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.image(logo, use_container_width=True)
