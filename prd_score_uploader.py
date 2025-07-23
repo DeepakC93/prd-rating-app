@@ -58,7 +58,7 @@ def generate_pdf(data, filename):
     pdf.ln(10)
 
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
-    col_widths = [30, 30, 30, 32, 50, 50, 50, 28]  # Adjusted widths
+    col_widths = [35, 40, 40, 38, 55, 55, 55, 30]  # Slightly increased column widths
 
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
@@ -76,7 +76,7 @@ def generate_pdf(data, filename):
         for i, h in enumerate(table_headers):
             pdf.set_xy(x_start, y_before)
             pdf.set_fill_color(200, 200, 200)
-            height = pdf.multi_cell(col_widths[i], 5, _sanitize_text(h), border=1, align='C', fill=True, max_line_height=pdf.font_size)
+            height = pdf.multi_cell(col_widths[i], 5, _sanitize_text(h), border=1, align='C', fill=True)
             header_cells.append(height)
             x_start += col_widths[i]
 
