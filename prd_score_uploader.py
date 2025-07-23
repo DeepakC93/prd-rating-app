@@ -164,4 +164,3 @@ if uploaded_file is not None:
 
     st.subheader("\U0001F50D Converted Score Table")
     st.dataframe(result_df)
-
