@@ -75,10 +75,10 @@ def generate_pdf(data, filename):
     pdf.cell(0, 10, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
     pdf.ln(10)
 
-    table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
+    table_headers = ['PRD Name', 'Role'] + list(weights.keys()) + ['Total Score']
     total_width = 277 - 20
     base_width = total_width / len(table_headers)
-    col_widths = [base_width + 2 if i == 0 else base_width for i in range(len(table_headers))]
+    col_widths = [base_width + 2 if i < 2 else base_width for i in range(len(table_headers))]
 
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
@@ -103,7 +103,7 @@ def generate_pdf(data, filename):
         pdf.set_font("Arial", size=9)
 
         for _, row in group.iterrows():
-            row_vals = [row['Role']]
+            row_vals = [row['PRD Name'], row['Role']]
             for key in weights:
                 orig_text = str(df.loc[row.name, key]).strip().lower()
                 score = row.get(key, "")
@@ -123,22 +123,21 @@ def generate_pdf(data, filename):
                 pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
             pdf.ln()
 
-        # Averages row
         pdf.set_fill_color(220, 220, 220)
         pdf.set_font("Arial", style='B', size=9)
         pdf.cell(col_widths[0], 8, "Avg", 1, 0, 'C', fill=True)
+        pdf.cell(col_widths[1], 8, "-", 1, 0, 'C', fill=True)
         for i, key in enumerate(weights):
             valid_vals = group[key].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
             avg_val = valid_vals.mean() if not valid_vals.empty else 0
             pdf.set_fill_color(220, 220, 220)
-            pdf.cell(col_widths[i+1], 8, f"{avg_val:.2f}", 1, 0, 'C', fill=True)
+            pdf.cell(col_widths[i+2], 8, f"{avg_val:.2f}", 1, 0, 'C', fill=True)
 
         r, g, b = get_color(avg)
         pdf.set_fill_color(r, g, b)
         pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
         pdf.ln(10)
 
-        # Add rationale for low score
         if avg < 7:
             lowest = []
             for param in weights:
