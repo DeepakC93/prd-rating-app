@@ -106,10 +106,16 @@ def generate_pdf(data, filename):
         fill = False
         pdf.set_font("Arial", size=9)
         for _, row in group.iterrows():
+            max_y = pdf.get_y()
+            x_start = pdf.get_x()
             for col in col_names:
                 value = str(row.get(col, ''))
-                pdf.cell(col_width, 8, value, border=1, align='C', fill=fill)
-            pdf.ln()
+                x_before = pdf.get_x()
+                y_before = pdf.get_y()
+                pdf.multi_cell(col_width, 8, value, border=1, align='C', fill=fill)
+                max_y = max(max_y, pdf.get_y())
+                pdf.set_xy(x_before + col_width, y_before)
+            pdf.set_y(max_y)
             fill = not fill
 
         pdf.set_font("Arial", style='B', size=9)
