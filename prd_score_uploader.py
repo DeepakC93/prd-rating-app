@@ -1,4 +1,4 @@
-import streamlit as st
+""import streamlit as st
 import pandas as pd
 from fpdf import FPDF
 import tempfile
@@ -76,11 +76,12 @@ def generate_pdf(data, filename):
 # Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
 
-# Centered logo display
+# Centered and resized logo display
 logo = Image.open("logo.png")
+logo.thumbnail((200, 200))  # Resize the logo
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.image(logo, use_column_width=True)
+    st.image(logo, use_container_width=True)
 
 st.title("📊 PRD Rating Report Generator")
 st.markdown("Upload the PRD score sheet (CSV or Excel) and get the report in PDF format.")
