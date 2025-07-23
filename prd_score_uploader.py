@@ -69,7 +69,7 @@ def generate_pdf(data, filename):
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt=f"Overall Average Score: {overall_avg:.2f}", ln=True, align='C')
     pdf.ln(5)
-    pdf.image(mood_image_path, x=65, w=80)
+    pdf.image(mood_image_path, x=55, w=100)  # Adjusted to be wider and centered
     pdf.ln(10)
 
     for prd_name, group in data.groupby('PRD Name'):
