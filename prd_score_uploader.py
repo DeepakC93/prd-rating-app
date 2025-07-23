@@ -71,10 +71,17 @@ def generate_pdf(data, filename):
 
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
+
+    # Add logo in top-left
+    logo_path = "logo.png"
+    if os.path.exists(logo_path):
+        pdf.image(logo_path, x=10, y=10, w=30)
+
+    pdf.set_xy(10, 20)
     pdf.set_font("Arial", style='B', size=14)
-    pdf.cell(200, 10, txt="PRD Rating Report", ln=True, align='C')
+    pdf.cell(0, 10, txt="PRD Rating Report", ln=True, align='C')
     pdf.set_font("Arial", style='', size=12)
-    pdf.cell(200, 10, txt=f"Overall Average Score: {overall_avg:.2f}", ln=True, align='C')
+    pdf.cell(0, 10, txt=f"Overall Average Score: {overall_avg:.2f}", ln=True, align='C')
     pdf.ln(10)
 
     for prd_name, group in data.groupby('PRD Name'):
@@ -127,7 +134,7 @@ with st.container():
     st.image(logo, width=150)
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.title("\U0001F4CA PRD Rating Report Generator")
+st.title("📊 PRD Rating Report Generator")
 st.markdown("Upload the PRD score sheet (CSV or Excel) and get the report in PDF format.")
 
 uploaded_file = st.file_uploader("Upload PRD Rating Sheet", type=["csv", "xlsx"])
@@ -181,7 +188,7 @@ if uploaded_file is not None:
 
         with open(tmp.name, "rb") as f:
             st.download_button(
-                label="\U0001F4C4 Download PDF Report",
+                label="📄 Download PDF Report",
                 data=f,
                 file_name="prd_report.pdf",
                 mime="application/pdf",
@@ -190,10 +197,10 @@ if uploaded_file is not None:
 
         os.unlink(tmp.name)
 
-    st.subheader("\U0001F4CA Summary of PRD Scores")
+    st.subheader("📊 Summary of PRD Scores")
     prd_summary = result_df.groupby("PRD Name")[["Total Score"]].mean().reset_index()
     prd_summary.columns = ["PRD Name", "Average Score"]
     st.dataframe(prd_summary)
 
-    st.subheader("\U0001F50D Converted Score Table")
+    st.subheader("🔍 Converted Score Table")
     st.dataframe(result_df)
