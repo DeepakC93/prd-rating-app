@@ -71,29 +71,29 @@ def generate_pdf(data, filename):
 
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
-    pdf.set_font("Arial", size=14)
+    pdf.set_font("Arial", style='B', size=14)
     pdf.cell(200, 10, txt="PRD Rating Report", ln=True, align='C')
-    pdf.set_font("Arial", size=12)
+    pdf.set_font("Arial", style='', size=12)
     pdf.cell(200, 10, txt=f"Overall Average Score: {overall_avg:.2f}", ln=True, align='C')
     pdf.ln(10)
 
     for prd_name, group in data.groupby('PRD Name'):
         pdf.set_font("Arial", style='B', size=12)
-        pdf.set_fill_color(230, 230, 250)  # light lavender for PRD title
+        pdf.set_fill_color(200, 220, 255)  # soft blue for PRD title
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
-        pdf.set_font("Arial", size=9)  # slightly smaller font
+        pdf.set_font("Arial", size=9)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
-        col_width = 195 / len(col_names)  # slightly more room
+        col_width = 195 / len(col_names)
 
-        # Header
-        pdf.set_fill_color(200, 200, 200)
+        pdf.set_fill_color(180, 200, 255)  # soft blue for header
+        pdf.set_font("Arial", style='B', size=9)
         for col in col_names:
             pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
         pdf.ln()
 
-        # Rows with alternating background
         fill = False
+        pdf.set_font("Arial", size=9)
         for _, row in group.iterrows():
             for col in col_names:
                 value = str(row.get(col, ''))
@@ -101,7 +101,6 @@ def generate_pdf(data, filename):
             pdf.ln()
             fill = not fill
 
-        # Average row
         pdf.set_font("Arial", style='B', size=9)
         pdf.set_fill_color(220, 220, 250)
         pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
@@ -191,7 +190,6 @@ if uploaded_file is not None:
 
         os.unlink(tmp.name)
 
-    # New summary section at the top in Streamlit
     st.subheader("\U0001F4CA Summary of PRD Scores")
     prd_summary = result_df.groupby("PRD Name")[["Total Score"]].mean().reset_index()
     prd_summary.columns = ["PRD Name", "Average Score"]
