@@ -60,6 +60,14 @@ def convert_to_score(row):
 def _sanitize_text(text):
     return str(text).encode("latin-1", "ignore").decode("latin-1")
 
+def get_color(score):
+    if score >= 1.5:
+        return (0, 200, 0)  # Green
+    elif score >= 0.5:
+        return (255, 165, 0)  # Orange
+    else:
+        return (255, 0, 0)  # Red
+
 def generate_pdf(data, filename):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
@@ -109,30 +117,33 @@ def generate_pdf(data, filename):
             row_vals.append(row['Total Score'])
 
             for i, val in enumerate(row_vals):
+                fill = False
                 if "(" in str(val):
                     score_part = val.split("(")[-1].rstrip(")")
                     try:
                         score_val = float(score_part)
-                        if score_val >= 1.5:
-                            pdf.set_fill_color(0, 200, 0)
-                        elif score_val >= 0.5:
-                            pdf.set_fill_color(255, 165, 0)
-                        else:
-                            pdf.set_fill_color(255, 0, 0)
+                        r, g, b = get_color(score_val)
+                        pdf.set_fill_color(r, g, b)
+                        fill = True
                     except:
                         pdf.set_fill_color(255, 255, 255)
                 else:
                     pdf.set_fill_color(255, 255, 255)
-                pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
+                pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=fill)
             pdf.ln()
 
+        # Averages row
         pdf.set_fill_color(220, 220, 220)
         pdf.set_font("Arial", style='B', size=9)
         pdf.cell(col_widths[0], 8, "Avg", 1, 0, 'C', fill=True)
         for i, key in enumerate(weights):
             valid_vals = group[key].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
             avg_val = valid_vals.mean() if not valid_vals.empty else 0
+            r, g, b = get_color(avg_val)
+            pdf.set_fill_color(r, g, b)
             pdf.cell(col_widths[i+1], 8, f"{avg_val:.2f}", 1, 0, 'C', fill=True)
+        r, g, b = get_color(avg)
+        pdf.set_fill_color(r, g, b)
         pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
         pdf.ln(10)
 
