@@ -38,27 +38,37 @@ weights = {
 
 def convert_to_score(row):
     scores = {}
+    total_score = 0
+    total_weight = 0
+
     for param_key in weights:
         val = row.get(param_key, '')
         val_normalized = str(val).strip().lower()
-        options = score_map.get(param_key, {})
-        mapped = options.get(val_normalized, 0)
+
+        if val_normalized == "not applicable":
+            scores[param_key] = "N/A"
+            continue
+
+        mapped = score_map.get(param_key, {}).get(val_normalized, 0)
         scores[param_key] = mapped
-    total = sum(scores.values())
-    return scores, total
+        total_score += mapped
+        total_weight += weights[param_key]
+
+    normalized_total = round(total_score * 10 / total_weight, 2) if total_weight else 0
+    return scores, normalized_total
 
 def _sanitize_text(text):
     return str(text).encode("latin-1", "replace").decode("latin-1")
 
 def generate_pdf(data, filename):
-    pdf = FPDF(orientation='L', unit='mm', format='A4')  # Landscape for wider tables
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     pdf.cell(0, 10, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
     pdf.ln(10)
 
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
-    total_width = 277 - 20  # usable width of landscape A4 minus margins
+    total_width = 277 - 20
     base_width = total_width / len(table_headers)
     col_widths = [base_width] * len(table_headers)
 
@@ -69,11 +79,9 @@ def generate_pdf(data, filename):
         pdf.cell(0, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
         pdf.set_font("Arial", size=9)
 
-        # Header Row
         y_before = pdf.get_y()
         x_start = pdf.get_x()
         max_height = 0
-
         header_cells = []
         for i, h in enumerate(table_headers):
             pdf.set_xy(x_start, y_before)
@@ -87,7 +95,6 @@ def generate_pdf(data, filename):
 
         pdf.set_y(y_before + max_height)
 
-        # Data Rows
         for _, row in group.iterrows():
             row_vals = [row['Role']]
             for key in weights:
@@ -109,12 +116,12 @@ def generate_pdf(data, filename):
                     pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
             pdf.ln()
 
-        # Average row
         pdf.set_fill_color(220, 220, 220)
         pdf.set_font("Arial", style='B', size=9)
         pdf.cell(col_widths[0], 8, "Avg", 1, 0, 'C', fill=True)
         for i, key in enumerate(weights):
-            avg_val = group[key].mean()
+            valid_vals = group[key].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
+            avg_val = valid_vals.mean() if not valid_vals.empty else 0
             pdf.cell(col_widths[i+1], 8, f"{avg_val:.2f}", 1, 0, 'C', fill=True)
         pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
         pdf.ln(10)
