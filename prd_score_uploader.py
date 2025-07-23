@@ -71,7 +71,7 @@ def get_color(score):
 def generate_pdf(data, filename):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
-    pdf.set_font("Arial", style='B', size=16)
+    pdf.set_font("Arial", style='B', size=18)
     pdf.cell(0, 12, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
     pdf.ln(10)
 
@@ -214,4 +214,4 @@ if uploaded_file is not None:
         os.unlink(tmp.name)
 
     st.subheader("\U0001F50D Converted Score Table")
-    st.dataframe(re
+    st.dataframe(result_df)
