@@ -99,22 +99,31 @@ def generate_pdf(data, filename):
         for _, row in group.iterrows():
             row_vals = [row['Role']]
             for key in weights:
-                score = row.get(key, 0)
-                row_vals.append(score)
+                orig_text = str(df.loc[row.name, key]).strip().lower()
+                score = row.get(key, "")
+                if isinstance(score, (int, float)):
+                    val_display = f"{orig_text} ({score})"
+                else:
+                    val_display = "N/A"
+                row_vals.append(val_display)
             row_vals.append(row['Total Score'])
 
             for i, val in enumerate(row_vals):
-                if isinstance(val, (int, float)):
-                    if val >= 1.5:
-                        pdf.set_fill_color(0, 200, 0)
-                    elif val >= 0.5:
-                        pdf.set_fill_color(255, 165, 0)
-                    else:
-                        pdf.set_fill_color(255, 0, 0)
-                    pdf.cell(col_widths[i], 8, str(val), 1, 0, 'C', fill=True)
+                if "(" in str(val):
+                    score_part = val.split("(")[-1].rstrip(")")
+                    try:
+                        score_val = float(score_part)
+                        if score_val >= 1.5:
+                            pdf.set_fill_color(0, 200, 0)
+                        elif score_val >= 0.5:
+                            pdf.set_fill_color(255, 165, 0)
+                        else:
+                            pdf.set_fill_color(255, 0, 0)
+                    except:
+                        pdf.set_fill_color(255, 255, 255)
                 else:
                     pdf.set_fill_color(255, 255, 255)
-                    pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
+                pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
             pdf.ln()
 
         pdf.set_fill_color(220, 220, 220)
