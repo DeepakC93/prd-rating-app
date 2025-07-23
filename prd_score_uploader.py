@@ -58,6 +58,14 @@ def convert_to_score(row):
     normalized_total = round(total_score * 10 / total_weight, 2) if total_weight else 0
     return scores, normalized_total
 
+def get_color_by_score(score):
+    if score >= 8:
+        return (144, 238, 144)  # light green
+    elif 6 <= score < 8:
+        return (255, 165, 0)    # orange
+    else:
+        return (255, 99, 71)    # red
+
 def generate_pdf(data, filename):
     overall_avg = data['Total Score'].mean()
 
@@ -91,11 +99,15 @@ def generate_pdf(data, filename):
 
         # Average row
         pdf.set_font("Arial", style='B', size=10)
-        pdf.set_fill_color(220, 220, 220)
-        pdf.cell(col_width, 10, "Average", border=1, fill=True)
+        pdf.cell(col_width, 10, "Average", border=1)
         for col in col_names[1:]:
             avg_val = group[col].mean() if pd.api.types.is_numeric_dtype(group[col]) else ""
-            pdf.cell(col_width, 10, f"{avg_val:.2f}" if avg_val != "" else "", border=1, fill=(col == 'Total Score'))
+            if col == 'Total Score' and avg_val != "":
+                r, g, b = get_color_by_score(avg_val)
+                pdf.set_fill_color(r, g, b)
+                pdf.cell(col_width, 10, f"{avg_val:.2f}", border=1, fill=True)
+            else:
+                pdf.cell(col_width, 10, f"{avg_val:.2f}" if avg_val != "" else "", border=1)
         pdf.ln()
         pdf.ln(5)
 
