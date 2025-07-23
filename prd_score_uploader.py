@@ -167,5 +167,11 @@ if uploaded_file is not None:
 
         os.unlink(tmp.name)
 
+    # New summary section at the top in Streamlit
+    st.subheader("📊 Summary of PRD Scores")
+    prd_summary = result_df.groupby("PRD Name")["Total Score"].mean().reset_index()
+    prd_summary.columns = ["PRD Name", "Average Score"]
+    st.dataframe(prd_summary)
+
     st.subheader("\U0001F50D Converted Score Table")
     st.dataframe(result_df)
