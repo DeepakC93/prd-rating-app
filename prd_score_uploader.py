@@ -121,17 +121,20 @@ if uploaded_file is not None:
         all_scores.append(scores)
 
     result_df = pd.DataFrame(all_scores)
-    st.subheader("🔍 Converted Score Table")
-
-    display_df = result_df[['PRD Name', 'Role'] + [col for col in result_df.columns if col not in ['PRD Name', 'Role']]]
-    st.dataframe(display_df)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         generate_pdf(result_df, tmp.name)
+        st.markdown("### 📥 Download Your Report")
         st.download_button(
             label="📅 Download PDF Report",
             data=open(tmp.name, "rb").read(),
             file_name="prd_report.pdf",
-            mime="application/pdf"
+            mime="application/pdf",
+            use_container_width=True,
+            key="download-btn"
         )
         os.unlink(tmp.name)
+
+    st.subheader("🔍 Converted Score Table")
+    display_df = result_df[['PRD Name', 'Role'] + [col for col in result_df.columns if col not in ['PRD Name', 'Role']]]
+    st.dataframe(display_df)
