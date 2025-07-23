@@ -28,7 +28,9 @@ def convert_to_score(row):
     scores = {}
     for key in weights:
         val = row.get(key, '')
-        mapped = score_map[key].get(str(val).strip(), 0)
+        val_normalized = str(val).strip().lower()
+        options = {k.lower(): v for k, v in score_map[key].items()}
+        mapped = options.get(val_normalized, 0)
         scores[key] = mapped
     total = sum(scores.values())
     return scores, total
@@ -67,6 +69,8 @@ if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
     else:
         df = pd.read_excel(uploaded_file)
+
+    df.columns = df.columns.str.strip()  # Normalize headers
 
     st.success("File uploaded successfully!")
 
