@@ -68,6 +68,7 @@ def get_color_by_score(score):
 
 def generate_pdf(data, filename):
     overall_avg = data['Total Score'].mean()
+    color = get_color_by_score(overall_avg)
 
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
@@ -81,7 +82,9 @@ def generate_pdf(data, filename):
     pdf.set_font("Arial", style='B', size=14)
     pdf.cell(0, 10, txt="PRD Rating Report", ln=True, align='C')
     pdf.set_font("Arial", style='', size=12)
+    pdf.set_text_color(*color)
     pdf.cell(0, 10, txt=f"Overall Average Score: {overall_avg:.2f}", ln=True, align='C')
+    pdf.set_text_color(0, 0, 0)
     pdf.ln(10)
 
     for prd_name, group in data.groupby('PRD Name'):
@@ -216,3 +219,4 @@ if uploaded_file is not None:
 
     st.subheader("🔍 Converted Score Table")
     st.dataframe(result_df)
+
