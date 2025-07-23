@@ -83,12 +83,7 @@ def generate_pdf(data, filename):
 
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
-        if avg >= 9:
-            color = "🟢🙂"
-        elif avg >= 6:
-            color = "🟠😐"
-        else:
-            color = "🔴☹️"
+        color = f"Avg Score: {avg:.2f}"
 
         pdf.set_font("Arial", style='B', size=12)
         pdf.cell(0, 10, txt=_sanitize_text(f"PRD: {prd}"), ln=False)
@@ -159,16 +154,9 @@ def generate_pdf(data, filename):
         pdf.ln(10)
 
     overall_avg = data['Total Score'].mean()
-    if overall_avg >= 9:
-        overall_emoji = "🟢🙂"
-    elif overall_avg >= 6:
-        overall_emoji = "🟠😐"
-    else:
-        overall_emoji = "🔴☹️"
-
     pdf.ln(10)
     pdf.set_font("Arial", style='B', size=12)
-    pdf.cell(0, 10, txt=f"{overall_emoji} Overall Average Score Across All PRDs: {overall_avg:.2f}", ln=True, align='C')
+    pdf.cell(0, 10, txt=f"Overall Average Score Across All PRDs: {overall_avg:.2f}", ln=True, align='C')
 
     pdf.output(filename)
 
