@@ -5,7 +5,7 @@ import tempfile
 import os
 from PIL import Image
 
-# Canonical parameter aliases to standardize header names
+# Canonical parameter aliases
 canonical_params = {
     "scope": "Scope",
     "design ready": "Design Ready",
@@ -15,9 +15,10 @@ canonical_params = {
     "depth of tech understanding delivered": "Tech depth",
     "prd name": "PRD Name",
     "role": "Role",
+    "comments": "Comments"
 }
 
-# Mapping for textual ratings to numeric scores
+# Textual ratings mapped to numeric
 score_map = {
     "Scope": {"not covered": 0, "partially covered": 0.5, "fully covered": 1},
     "Design Ready": {"not covered": 0, "partially covered": 0.5, "fully covered": 1.5},
@@ -27,7 +28,7 @@ score_map = {
     "Tech depth": {"not covered": 0, "partially covered": 0.5, "fully covered": 2},
 }
 
-# Weights of each parameter
+# Parameter weights
 weights = {
     "Scope": 1,
     "Design Ready": 1.5,
@@ -51,7 +52,8 @@ def convert_to_score(row):
             continue
 
         mapped = score_map.get(param_key, {}).get(val_normalized, 0)
-        scores[param_key] = mapped
+        display_val = f"{val.title()} ({mapped})"
+        scores[param_key] = display_val
         total_score += mapped
         total_weight += weights[param_key]
 
@@ -73,7 +75,6 @@ def generate_pdf(data, filename):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
 
-    # Add logo in top-left
     logo_path = "logo.png"
     if os.path.exists(logo_path):
         pdf.image(logo_path, x=10, y=10, w=30)
@@ -89,58 +90,57 @@ def generate_pdf(data, filename):
 
     for prd_name, group in data.groupby('PRD Name'):
         pdf.set_font("Arial", style='B', size=12)
-        pdf.set_fill_color(200, 220, 255)  # soft blue for PRD title
+        pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
-        pdf.set_font("Arial", size=9)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
-        pdf.set_fill_color(180, 200, 255)  # soft blue for header
-        pdf.set_font("Arial", style='B', size=9)
+        pdf.set_font("Arial", style='B', size=8)
+        pdf.set_fill_color(180, 200, 255)
         for col in col_names:
-            pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
+            pdf.cell(col_width, 7, col, border=1, align='C', fill=True)
         pdf.ln()
 
         fill = False
-        pdf.set_font("Arial", size=9)
+        pdf.set_font("Arial", size=7)
         for _, row in group.iterrows():
             for col in col_names:
-                value = str(row.get(col, ''))
-                pdf.cell(col_width, 8, value, border=1, align='C', fill=fill)
+                value = str(row.get(col, ''))[:30]  # Trim to fit
+                pdf.cell(col_width, 7, value, border=1, align='C', fill=fill)
             pdf.ln()
             fill = not fill
 
-        # Draw average row with manual numeric conversion
-        pdf.set_font("Arial", style='B', size=9)
+        # Averages Row
+        pdf.set_font("Arial", style='B', size=7)
         pdf.set_fill_color(220, 220, 250)
-        pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
+        pdf.cell(col_width, 7, "Average", border=1, align='C', fill=True)
 
         for col in col_names[1:]:
             try:
-                numeric_vals = pd.to_numeric(group[col], errors='coerce')
+                numeric_vals = pd.to_numeric(group[col].str.extract(r'([\d.]+)')[0], errors='coerce')
                 avg_val = numeric_vals.mean()
 
                 if pd.isna(avg_val):
                     pdf.set_fill_color(240, 240, 255)
-                    pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
+                    pdf.cell(col_width, 7, "", border=1, align='C', fill=True)
                 else:
                     if col == 'Total Score':
                         r, g, b = get_color_by_score(avg_val)
                         pdf.set_fill_color(r, g, b)
                     else:
                         pdf.set_fill_color(240, 240, 255)
-                    pdf.cell(col_width, 8, f"{avg_val:.2f}", border=1, align='C', fill=True)
+                    pdf.cell(col_width, 7, f"{avg_val:.2f}", border=1, align='C', fill=True)
             except Exception:
                 pdf.set_fill_color(240, 240, 255)
-                pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
+                pdf.cell(col_width, 7, "", border=1, align='C', fill=True)
 
         pdf.ln()
-        pdf.ln(4)
+        pdf.ln(3)
 
     pdf.output(filename)
 
-# Streamlit App
+# Streamlit UI
 st.set_page_config(page_title="PRD Rating Report Generator")
 
 logo = Image.open("logo.png")
@@ -185,7 +185,10 @@ if uploaded_file is not None:
     else:
         df['Role'] = 'Unknown'
 
-    st.success("File uploaded and normalized!")
+    if 'Comments' not in df.columns:
+        df['Comments'] = ''
+
+    st.success("✅ File uploaded and normalized!")
 
     all_scores = []
     for idx, row in df.iterrows():
@@ -193,11 +196,13 @@ if uploaded_file is not None:
         scores['PRD Name'] = row.get('PRD Name', f"PRD-{idx+1}")
         scores['Role'] = row.get('Role', 'Unknown')
         scores['Total Score'] = total
+        scores['Comments'] = row.get('Comments', '')
         all_scores.append(scores)
 
     result_df = pd.DataFrame(all_scores)
-    result_df = result_df[['PRD Name', 'Role'] + [col for col in result_df.columns if col not in ['PRD Name', 'Role']]]
+    result_df = result_df[['PRD Name', 'Role'] + list(weights.keys()) + ['Total Score', 'Comments']]
 
+    # Generate PDF
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         generate_pdf(result_df, tmp.name)
 
@@ -212,10 +217,22 @@ if uploaded_file is not None:
 
         os.unlink(tmp.name)
 
+    # Streamlit Summary Section
     st.subheader("📊 Summary of PRD Scores")
     prd_summary = result_df.groupby("PRD Name")[["Total Score"]].mean().reset_index()
     prd_summary.columns = ["PRD Name", "Average Score"]
     st.dataframe(prd_summary)
 
-    st.subheader("🔍 Converted Score Table")
+    # Show Comments per PRD
+    st.subheader("💬 PRD Comments")
+    for prd, group in result_df.groupby("PRD Name"):
+        comments = group['Comments'].dropna().unique()
+        if any(comments):
+            st.markdown(f"**{prd}**")
+            for comment in comments:
+                if comment.strip():
+                    st.markdown(f"- {comment.strip()}")
+
+    # Final Table
+    st.subheader("🔍 Detailed Rating Table")
     st.dataframe(result_df)
