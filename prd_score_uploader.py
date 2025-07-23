@@ -110,7 +110,7 @@ def generate_pdf(data, filename):
             fill = not fill
 
             # If comment is present, show below the row
-            comment = row.get('Comments', '').strip()
+            comment = str(row.get('Comments', '')).strip()
             if comment:
                 pdf.set_font("Arial", style='I', size=8)
                 pdf.multi_cell(0, 6, f"Comment: {comment}", border=0)
