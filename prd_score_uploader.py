@@ -81,10 +81,10 @@ def generate_pdf(data, filename):
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(230, 230, 250)  # light lavender for PRD title
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
-        pdf.set_font("Arial", size=10)
+        pdf.set_font("Arial", size=9)  # slightly smaller font
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
-        col_width = 190 / len(col_names)
+        col_width = 195 / len(col_names)  # slightly more room
 
         # Header
         pdf.set_fill_color(200, 200, 200)
@@ -102,7 +102,7 @@ def generate_pdf(data, filename):
             fill = not fill
 
         # Average row
-        pdf.set_font("Arial", style='B', size=10)
+        pdf.set_font("Arial", style='B', size=9)
         pdf.set_fill_color(220, 220, 250)
         pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
         for col in col_names[1:]:
@@ -199,4 +199,3 @@ if uploaded_file is not None:
 
     st.subheader("\U0001F50D Converted Score Table")
     st.dataframe(result_df)
-
