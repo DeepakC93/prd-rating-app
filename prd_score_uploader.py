@@ -70,7 +70,7 @@ def get_color(score):
         return (255, 0, 0)  # Red
 
 def generate_pdf(data, filename):
-    pdf = FPDF(orientation='L', unit='mm', format='A4')
+    pdf = FPDF(orientation='L', unit='mm', format=(297, 230))  # Extended height
     pdf.add_page()
     pdf.set_font("Arial", style='B', size=18)
     pdf.cell(0, 12, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
@@ -158,7 +158,6 @@ def generate_pdf(data, filename):
     pdf.set_font("Arial", style='B', size=12)
     pdf.cell(0, 10, txt=f"Overall Average Score Across All PRDs: {overall_avg:.2f}", ln=True, align='C')
 
-    # Add mood image at bottom center
     image_path = None
     if overall_avg >= 9:
         image_path = "mood_images/happy.png"
@@ -168,7 +167,7 @@ def generate_pdf(data, filename):
         image_path = "mood_images/sad.png"
 
     if image_path and os.path.exists(image_path):
-        pdf.image(image_path, x=125, y=pdf.get_y()+10, w=40)
+        pdf.image(image_path, x=125, y=pdf.get_y() + 10, w=40)
 
     pdf.output(filename)
 
