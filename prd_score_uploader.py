@@ -9,9 +9,9 @@ canonical_params = {
     "scope": "Scope",
     "design ready": "Design Ready",
     "prd handover": "PRD Handover",
-    "requirement changes post handover": "Requirement changes post handover",
-    "completeness of requirement coverage": "Completeness of Requirement Coverage",
-    "depth of tech understanding delivered": "Depth of tech Understanding Delivered",
+    "requirement changes post handover": "Req. changes",
+    "completeness of requirement coverage": "Coverage",
+    "depth of tech understanding delivered": "Tech depth",
     "prd name": "PRD Name",
     "role": "Role",
 }
@@ -21,9 +21,9 @@ score_map = {
     "Scope": {"not covered": 0, "partially covered": 0.5, "fully covered": 1},
     "Design Ready": {"not covered": 0, "partially covered": 0.5, "fully covered": 1.5},
     "PRD Handover": {"no": 0, "yes": 1.5},
-    "Requirement changes post handover": {"changed n time": 0, "changed 1 time": 0.5, "no changes": 2},
-    "Completeness of Requirement Coverage": {"not covered": 0, "partially covered": 0.5, "fully covered": 2},
-    "Depth of tech Understanding Delivered": {"not covered": 0, "partially covered": 0.5, "fully covered": 2},
+    "Req. changes": {"changed n time": 0, "changed 1 time": 0.5, "no changes": 2},
+    "Coverage": {"not covered": 0, "partially covered": 0.5, "fully covered": 2},
+    "Tech depth": {"not covered": 0, "partially covered": 0.5, "fully covered": 2},
 }
 
 # Weights of each parameter
@@ -31,9 +31,9 @@ weights = {
     "Scope": 1,
     "Design Ready": 1.5,
     "PRD Handover": 1.5,
-    "Requirement changes post handover": 2,
-    "Completeness of Requirement Coverage": 2,
-    "Depth of tech Understanding Delivered": 2,
+    "Req. changes": 2,
+    "Coverage": 2,
+    "Tech depth": 2,
 }
 
 def convert_to_score(row):
@@ -70,14 +70,14 @@ def generate_pdf(data, filename):
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
     total_width = 277 - 20
     base_width = total_width / len(table_headers)
-    col_widths = [base_width + 2 if i == 0 else base_width for i in range(len(table_headers))]  # widen the first column
+    col_widths = [base_width + 2 if i == 0 else base_width for i in range(len(table_headers))]
 
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
         color = "🟢" if avg >= 9 else "🟠" if avg >= 6 else "🔴"
         pdf.set_font("Arial", style='B', size=12)
         pdf.cell(0, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
-        pdf.set_font("Arial", size=9)
+        pdf.set_font("Arial", style='B', size=9)
 
         y_before = pdf.get_y()
         x_start = pdf.get_x()
@@ -94,6 +94,7 @@ def generate_pdf(data, filename):
             x_start += col_widths[i]
 
         pdf.set_y(y_before + max_height)
+        pdf.set_font("Arial", size=9)
 
         for _, row in group.iterrows():
             row_vals = [row['Role']]
