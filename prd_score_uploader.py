@@ -108,18 +108,27 @@ def generate_pdf(data, filename):
             pdf.ln()
             fill = not fill
 
+        # Draw average row with fixes
         pdf.set_font("Arial", style='B', size=9)
         pdf.set_fill_color(220, 220, 250)
         pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
         for col in col_names[1:]:
-            avg_val = group[col].mean() if pd.api.types.is_numeric_dtype(group[col]) else ""
-            if col == 'Total Score' and avg_val != "":
-                r, g, b = get_color_by_score(avg_val)
-                pdf.set_fill_color(r, g, b)
-                pdf.cell(col_width, 8, f"{avg_val:.2f}", border=1, align='C', fill=True)
+            if pd.api.types.is_numeric_dtype(group[col]):
+                avg_val = group[col].mean()
+                if pd.isna(avg_val):
+                    pdf.set_fill_color(240, 240, 255)
+                    pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
+                else:
+                    if col == 'Total Score':
+                        r, g, b = get_color_by_score(avg_val)
+                        pdf.set_fill_color(r, g, b)
+                    else:
+                        pdf.set_fill_color(240, 240, 255)
+                    pdf.cell(col_width, 8, f"{avg_val:.2f}", border=1, align='C', fill=True)
             else:
                 pdf.set_fill_color(240, 240, 255)
-                pdf.cell(col_width, 8, f"{avg_val:.2f}" if avg_val != "" else "", border=1, align='C', fill=True)
+                pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
+
         pdf.ln()
         pdf.ln(4)
 
