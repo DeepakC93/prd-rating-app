@@ -1,4 +1,4 @@
-import streamlit as st
+""import streamlit as st
 import pandas as pd
 from fpdf import FPDF
 import tempfile
@@ -69,15 +69,6 @@ def generate_pdf(data, filename):
     pdf.cell(200, 10, txt=f"Overall Average Score: {overall_avg:.2f}", ln=True, align='C')
     pdf.ln(10)
 
-    # Summary Section: List of PRDs with average scores
-    pdf.set_font("Arial", style='B', size=12)
-    pdf.cell(200, 10, txt="Summary of PRD Average Scores", ln=True)
-    summary = data.groupby('PRD Name')['Total Score'].mean().reset_index()
-    for _, row in summary.iterrows():
-        pdf.set_font("Arial", size=11)
-        pdf.cell(200, 8, txt=f"{row['PRD Name']}: {row['Total Score']:.2f}", ln=True)
-
-    pdf.add_page()
     for prd_name, group in data.groupby('PRD Name'):
         pdf.set_font("Arial", style='B', size=12)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True)
@@ -171,7 +162,7 @@ if uploaded_file is not None:
 
     # New summary section at the top in Streamlit
     st.subheader("\U0001F4CA Summary of PRD Scores")
-    prd_summary = result_df.groupby("PRD Name")["Total Score"].mean().reset_index()
+    prd_summary = result_df.groupby("PRD Name")[["Total Score"]].mean().reset_index()
     prd_summary.columns = ["PRD Name", "Average Score"]
     st.dataframe(prd_summary)
 
