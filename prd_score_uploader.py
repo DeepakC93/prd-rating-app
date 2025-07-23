@@ -75,14 +75,19 @@ def generate_pdf(data, filename):
         pdf.set_font("Arial", size=10)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
+        col_width = 190 / len(col_names)
 
-        header_line = ' | '.join(['Rating'] + list(weights.keys()) + ['Total Score'])
-        pdf.multi_cell(0, 10, header_line)
+        # Header
+        for col in col_names:
+            pdf.cell(col_width, 10, col, border=1)
+        pdf.ln()
 
-        for idx, (_, row) in enumerate(group.iterrows()):
-            row_values = [f"Rating {idx+1}"] + [str(row.get(col, '')) for col in list(weights.keys()) + ['Total Score']]
-            row_line = ' | '.join(row_values)
-            pdf.multi_cell(0, 10, row_line)
+        # Rows
+        for _, row in group.iterrows():
+            for col in col_names:
+                value = str(row.get(col, ''))
+                pdf.cell(col_width, 10, value, border=1)
+            pdf.ln()
 
         pdf.ln(5)
 
