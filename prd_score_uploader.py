@@ -28,7 +28,7 @@ def convert_to_score(row):
     scores = {}
     for key in weights:
         val = row.get(key, '')
-        mapped = score_map[key].get(val.strip(), 0)
+        mapped = score_map[key].get(str(val).strip(), 0)
         scores[key] = mapped
     total = sum(scores.values())
     return scores, total
