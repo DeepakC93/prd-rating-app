@@ -86,11 +86,11 @@ def generate_pdf(data, filename):
     col_widths = [w * scale for w in col_widths]
 
     pdf.set_fill_color(230, 230, 230)
-    pdf.set_font(style="B")
+    pdf.set_font("Arial", style="B", size=10)
     for i, col in enumerate(col_names):
         pdf.cell(col_widths[i], line_height, _sanitize_text(col), border=1, align='C', fill=True)
     pdf.ln(line_height)
-    pdf.set_font(style="")
+    pdf.set_font("Arial", style="", size=10)
 
     for _, row in data.iterrows():
         for i, col in enumerate(col_names):
