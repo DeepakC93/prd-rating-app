@@ -70,7 +70,7 @@ def get_color(score):
         return (255, 0, 0)  # Red
 
 def generate_pdf(data, filename):
-    pdf = FPDF(orientation='L', unit='mm', format=(297, 230))  # Extended height
+    pdf = FPDF(orientation='L', unit='mm', format=(297, 250))  # Wider and taller
     pdf.add_page()
     pdf.set_font("Arial", style='B', size=18)
     pdf.cell(0, 12, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
@@ -167,7 +167,7 @@ def generate_pdf(data, filename):
         image_path = "mood_images/sad.png"
 
     if image_path and os.path.exists(image_path):
-        pdf.image(image_path, x=125, y=pdf.get_y() + 10, w=40)
+        pdf.image(image_path, x=(297 - 40) / 2, y=pdf.get_y() + 10, w=40)
 
     pdf.output(filename)
 
