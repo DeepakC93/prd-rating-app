@@ -3,7 +3,6 @@ import pandas as pd
 from fpdf import FPDF
 import tempfile
 import os
-from PIL import Image
 
 # Canonical parameter aliases to standardize header names
 canonical_params = {
@@ -70,56 +69,91 @@ def get_color(score):
         return (255, 0, 0)  # Red
 
 def generate_pdf(data, filename):
-    pdf = FPDF()
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=10)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
+    pdf.ln(10)
 
-    col_names = [col for col in data.columns if col != 'PRD Name']
-    col_widths = [pdf.get_string_width(col) + 10 for col in col_names]
-    col_widths = [max(w, 25) for w in col_widths]
+    table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
+    total_width = 277 - 20
+    base_width = total_width / len(table_headers)
+    col_widths = [base_width + 2 if i == 0 else base_width for i in range(len(table_headers))]
 
-    line_height = 8
-    max_width = sum(col_widths)
-    page_width = pdf.w - 2 * pdf.l_margin
-    scale = page_width / max_width
-    col_widths = [w * scale for w in col_widths]
+    for prd, group in data.groupby('PRD Name'):
+        avg = group['Total Score'].mean()
+        color = "🟢" if avg >= 9 else "🟠" if avg >= 6 else "🔴"
+        pdf.set_font("Arial", style='B', size=12)
+        pdf.cell(0, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
+        pdf.set_font("Arial", style='B', size=9)
 
-    pdf.set_fill_color(230, 230, 230)
-    pdf.set_font("Arial", style="B", size=10)
-    for i, col in enumerate(col_names):
-        pdf.cell(col_widths[i], line_height, _sanitize_text(col), border=1, align='C', fill=True)
-    pdf.ln(line_height)
-    pdf.set_font("Arial", style="", size=10)
+        y_before = pdf.get_y()
+        x_start = pdf.get_x()
+        max_height = 0
+        for i, h in enumerate(table_headers):
+            pdf.set_xy(x_start, y_before)
+            pdf.set_fill_color(200, 200, 200)
+            y_cell_start = pdf.get_y()
+            pdf.multi_cell(col_widths[i], 6, _sanitize_text(h), border=1, align='C', fill=True)
+            y_cell_end = pdf.get_y()
+            max_height = max(max_height, y_cell_end - y_cell_start)
+            x_start += col_widths[i]
 
-    for _, row in data.iterrows():
-        for i, col in enumerate(col_names):
-            val = row[col]
-            if col == "Total Score":
-                if isinstance(val, (int, float)):
-                    r, g, b = get_color(val)
-                    pdf.set_fill_color(r, g, b)
+        pdf.set_y(y_before + max_height)
+        pdf.set_font("Arial", size=9)
+
+        for _, row in group.iterrows():
+            row_vals = [row['Role']]
+            for key in weights:
+                orig_text = str(df.loc[row.name, key]).strip().lower()
+                score = row.get(key, "")
+                if isinstance(score, (int, float)):
+                    val_display = f"{orig_text} ({score})"
                 else:
-                    pdf.set_fill_color(255, 255, 255)
-            else:
-                pdf.set_fill_color(255, 255, 255)
+                    val_display = "N/A"
+                row_vals.append(val_display)
+            row_vals.append(row['Total Score'])
 
-            text = str(val)
-            pdf.cell(col_widths[i], line_height, _sanitize_text(text), border=1, align='C', fill=True)
-        pdf.ln(line_height)
+            for i, val in enumerate(row_vals):
+                pdf.set_fill_color(255, 255, 255)
+                pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
+            pdf.ln()
+
+        # Averages row
+        pdf.set_fill_color(220, 220, 220)
+        pdf.set_font("Arial", style='B', size=9)
+        pdf.cell(col_widths[0], 8, "Avg", 1, 0, 'C', fill=True)
+        for i, key in enumerate(weights):
+            valid_vals = group[key].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
+            avg_val = valid_vals.mean() if not valid_vals.empty else 0
+            pdf.set_fill_color(220, 220, 220)
+            pdf.cell(col_widths[i+1], 8, f"{avg_val:.2f}", 1, 0, 'C', fill=True)
+
+        r, g, b = get_color(avg)
+        pdf.set_fill_color(r, g, b)
+        pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
+        pdf.ln(10)
+
+        # Add rationale for low score
+        if avg < 7:
+            lowest = []
+            for param in weights:
+                param_scores = group[param].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
+                avg_score = param_scores.mean() if not param_scores.empty else 0
+                if avg_score < 0.6 * max(score_map[param].values()):
+                    lowest.append(param)
+
+            if lowest:
+                reasons = ", ".join(lowest)
+                pdf.set_text_color(255, 0, 0)
+                pdf.set_font("Arial", style='', size=9)
+                pdf.multi_cell(0, 8, f"\nNote: This PRD scored low mainly due to weak performance in: {reasons}.")
+                pdf.set_text_color(0, 0, 0)
 
     pdf.output(filename)
 
 # Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
-
-# Centered and resized logo display
-logo = Image.open("logo.png")
-logo.thumbnail((60, 60))
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    st.image(logo, use_container_width=True)
-
 st.title("📊 PRD Rating Report Generator")
 st.markdown("Upload the PRD score sheet (CSV or Excel) and get the report in PDF format.")
 
@@ -167,20 +201,15 @@ if uploaded_file is not None:
         all_scores.append(scores)
 
     result_df = pd.DataFrame(all_scores)
+    st.subheader("🔍 Converted Score Table")
+    st.dataframe(result_df)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         generate_pdf(result_df, tmp.name)
-        st.markdown("### 📥 Download Your Report")
         st.download_button(
             label="📅 Download PDF Report",
             data=open(tmp.name, "rb").read(),
             file_name="prd_report.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-            key="download-btn"
+            mime="application/pdf"
         )
         os.unlink(tmp.name)
-
-    st.subheader("🔍 Converted Score Table")
-    display_df = result_df[['PRD Name', 'Role'] + [col for col in result_df.columns if col not in ['PRD Name', 'Role']]]
-    st.dataframe(display_df)
