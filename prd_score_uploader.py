@@ -83,9 +83,17 @@ def generate_pdf(data, filename):
 
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
-        color = "🟢" if avg >= 9 else "🟠" if avg >= 6 else "🔴"
+        if avg >= 9:
+            color = "🟢🙂"
+        elif avg >= 6:
+            color = "🟠😐"
+        else:
+            color = "🔴☹️"
+
         pdf.set_font("Arial", style='B', size=12)
-        pdf.cell(0, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
+        pdf.cell(0, 10, txt=_sanitize_text(f"PRD: {prd}"), ln=False)
+        pdf.cell(0, 10, txt=color, align='R')
+        pdf.ln()
 
         if avg < 7:
             lowest = []
@@ -150,12 +158,23 @@ def generate_pdf(data, filename):
         pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
         pdf.ln(10)
 
+    overall_avg = data['Total Score'].mean()
+    if overall_avg >= 9:
+        overall_emoji = "🟢🙂"
+    elif overall_avg >= 6:
+        overall_emoji = "🟠😐"
+    else:
+        overall_emoji = "🔴☹️"
+
+    pdf.ln(10)
+    pdf.set_font("Arial", style='B', size=12)
+    pdf.cell(0, 10, txt=f"{overall_emoji} Overall Average Score Across All PRDs: {overall_avg:.2f}", ln=True, align='C')
+
     pdf.output(filename)
 
 # Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
 
-# Show logo in center
 logo = Image.open("logo.png")
 with st.container():
     st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
