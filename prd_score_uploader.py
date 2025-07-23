@@ -89,38 +89,32 @@ def generate_pdf(data, filename):
     pdf.ln(10)
 
     for prd_name, group in data.groupby('PRD Name'):
-        pdf.set_font("Arial", style='B', size=11)
+        pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
-        pdf.set_font("Arial", size=8)
+        pdf.set_font("Arial", size=9)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
         pdf.set_fill_color(180, 200, 255)
-        pdf.set_font("Arial", style='B', size=8)
+        pdf.set_font("Arial", style='B', size=9)
         for col in col_names:
             pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
         pdf.ln()
 
         fill = False
-        pdf.set_font("Arial", size=8)
+        pdf.set_font("Arial", size=9)
         for _, row in group.iterrows():
-            max_y = pdf.get_y()
-            x_start = pdf.get_x()
             for col in col_names:
                 value = str(row.get(col, ''))
-                x_before = pdf.get_x()
-                y_before = pdf.get_y()
-                pdf.multi_cell(col_width, 6, value, border=1, align='C', fill=fill)
-                max_y = max(max_y, pdf.get_y())
-                pdf.set_xy(x_before + col_width, y_before)
-            pdf.set_y(max_y)
+                pdf.cell(col_width, 8, value, border=1, align='C', fill=fill)
+            pdf.ln()
             fill = not fill
 
-        pdf.set_font("Arial", style='B', size=8)
+        pdf.set_font("Arial", style='B', size=9)
         pdf.set_fill_color(220, 220, 250)
-        pdf.cell(col_width, 6, "Average", border=1, align='C', fill=True)
+        pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
 
         for col in col_names[1:]:
             try:
@@ -129,20 +123,20 @@ def generate_pdf(data, filename):
 
                 if pd.isna(avg_val):
                     pdf.set_fill_color(240, 240, 255)
-                    pdf.cell(col_width, 6, "", border=1, align='C', fill=True)
+                    pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
                 else:
                     if col == 'Total Score':
                         r, g, b = get_color_by_score(avg_val)
                         pdf.set_fill_color(r, g, b)
                     else:
                         pdf.set_fill_color(240, 240, 255)
-                    pdf.cell(col_width, 6, f"{avg_val:.2f}", border=1, align='C', fill=True)
+                    pdf.cell(col_width, 8, f"{avg_val:.2f}", border=1, align='C', fill=True)
             except Exception:
                 pdf.set_fill_color(240, 240, 255)
-                pdf.cell(col_width, 6, "", border=1, align='C', fill=True)
+                pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
 
         pdf.ln()
-        pdf.ln(3)
+        pdf.ln(4)
 
     pdf.output(filename)
 
@@ -227,14 +221,6 @@ if uploaded_file is not None:
     prd_summary.columns = ["PRD Name", "Average Score"]
     st.dataframe(prd_summary)
 
-    st.subheader("📝 Comments by PRD")
-    for prd_name, group in result_df.groupby("PRD Name"):
-        comments = group["Comments"].dropna().astype(str).str.strip()
-        comments = comments[comments != '']
-        if not comments.empty:
-            st.markdown(f"**{prd_name}**")
-            for comment in comments:
-                st.markdown(f"- {comment}")
-
     st.subheader("🔍 Converted Score Table")
     st.dataframe(result_df)
+    
