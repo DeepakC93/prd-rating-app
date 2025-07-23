@@ -15,6 +15,7 @@ canonical_params = {
     "depth of tech understanding delivered": "Tech depth",
     "prd name": "PRD Name",
     "role": "Role",
+    "comments": "Comments"
 }
 
 # Mapping for textual ratings to numeric scores
@@ -51,7 +52,8 @@ def convert_to_score(row):
             continue
 
         mapped = score_map.get(param_key, {}).get(val_normalized, 0)
-        scores[param_key] = mapped
+        display_val = f"{val.title()} ({mapped})"
+        scores[param_key] = display_val
         total_score += mapped
         total_weight += weights[param_key]
 
@@ -73,7 +75,6 @@ def generate_pdf(data, filename):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
 
-    # Add logo in top-left
     logo_path = "logo.png"
     if os.path.exists(logo_path):
         pdf.image(logo_path, x=10, y=10, w=30)
@@ -89,14 +90,14 @@ def generate_pdf(data, filename):
 
     for prd_name, group in data.groupby('PRD Name'):
         pdf.set_font("Arial", style='B', size=12)
-        pdf.set_fill_color(200, 220, 255)  # soft blue for PRD title
+        pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
         pdf.set_font("Arial", size=9)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
-        pdf.set_fill_color(180, 200, 255)  # soft blue for header
+        pdf.set_fill_color(180, 200, 255)
         pdf.set_font("Arial", style='B', size=9)
         for col in col_names:
             pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
@@ -111,14 +112,13 @@ def generate_pdf(data, filename):
             pdf.ln()
             fill = not fill
 
-        # Draw average row with manual numeric conversion
         pdf.set_font("Arial", style='B', size=9)
         pdf.set_fill_color(220, 220, 250)
         pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
 
         for col in col_names[1:]:
             try:
-                numeric_vals = pd.to_numeric(group[col], errors='coerce')
+                numeric_vals = pd.to_numeric(group[col].str.extract(r'([\d.]+)')[0], errors='coerce')
                 avg_val = numeric_vals.mean()
 
                 if pd.isna(avg_val):
@@ -185,6 +185,9 @@ if uploaded_file is not None:
     else:
         df['Role'] = 'Unknown'
 
+    if 'Comments' not in df.columns:
+        df['Comments'] = ''
+
     st.success("File uploaded and normalized!")
 
     all_scores = []
@@ -193,10 +196,11 @@ if uploaded_file is not None:
         scores['PRD Name'] = row.get('PRD Name', f"PRD-{idx+1}")
         scores['Role'] = row.get('Role', 'Unknown')
         scores['Total Score'] = total
+        scores['Comments'] = row.get('Comments', '')
         all_scores.append(scores)
 
     result_df = pd.DataFrame(all_scores)
-    result_df = result_df[['PRD Name', 'Role'] + [col for col in result_df.columns if col not in ['PRD Name', 'Role']]]
+    result_df = result_df[['PRD Name', 'Role'] + list(weights.keys()) + ['Total Score', 'Comments']]
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         generate_pdf(result_df, tmp.name)
@@ -219,4 +223,3 @@ if uploaded_file is not None:
 
     st.subheader("🔍 Converted Score Table")
     st.dataframe(result_df)
-
