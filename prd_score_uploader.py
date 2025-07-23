@@ -89,9 +89,10 @@ def generate_pdf(data, filename):
         image_path = "mood_images/sad.png"
 
     if image_path and os.path.exists(image_path):
-        pdf.image(image_path, x=130, y=35, w=30)  # Centered and slightly larger
+        pdf.ln(5)
+        pdf.image(image_path, x=120, y=40, w=50)
+        pdf.ln(60)
 
-    pdf.ln(30)
     pdf.set_font("Arial", style='B', size=11)
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
     col_width = 277 / len(table_headers)
