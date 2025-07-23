@@ -33,25 +33,25 @@ def convert_to_score(row):
     total = sum(scores.values())
     return scores, total
 
+def _sanitize_text(text):
+    return str(text).encode("latin-1", "replace").decode("latin-1")
+
 def generate_pdf(data, filename):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 8, txt=self._sanitize_text(text), ln=True)
+    pdf.cell(200, 10, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
     pdf.ln(10)
 
     for prd, group in data.groupby('PRD Name'):
         pdf.set_font("Arial", style='B', size=12)
-        pdf.cell(200, 10, txt=_sanitize_text(f"PRD: {prd}"), ln=True) 
+        pdf.cell(200, 10, txt=_sanitize_text(f"PRD: {prd}"), ln=True)
         pdf.set_font("Arial", size=10)
         for _, row in group.iterrows():
             pdf.cell(200, 8, txt=_sanitize_text(f"- Role: {row['Role']}, Score: {row['Total Score']:.1f}"), ln=True)
         avg = group['Total Score'].mean()
         pdf.cell(200, 8, txt=_sanitize_text(f"→ Avg Score: {avg:.2f}"), ln=True)
         pdf.ln(5)
-
-    def _sanitize_text(text):
-    return str(text).encode("latin-1", "replace").decode("latin-1")
 
     pdf.output(filename)
 
