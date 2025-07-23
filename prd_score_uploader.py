@@ -90,14 +90,12 @@ def generate_pdf(data, filename):
         y_before = pdf.get_y()
         x_start = pdf.get_x()
         max_height = 0
-        header_cells = []
         for i, h in enumerate(table_headers):
             pdf.set_xy(x_start, y_before)
             pdf.set_fill_color(200, 200, 200)
             y_cell_start = pdf.get_y()
             pdf.multi_cell(col_widths[i], 6, _sanitize_text(h), border=1, align='C', fill=True)
             y_cell_end = pdf.get_y()
-            header_cells.append(y_cell_end - y_cell_start)
             max_height = max(max_height, y_cell_end - y_cell_start)
             x_start += col_widths[i]
 
@@ -117,19 +115,8 @@ def generate_pdf(data, filename):
             row_vals.append(row['Total Score'])
 
             for i, val in enumerate(row_vals):
-                fill = False
-                if "(" in str(val):
-                    score_part = val.split("(")[-1].rstrip(")")
-                    try:
-                        score_val = float(score_part)
-                        r, g, b = get_color(score_val)
-                        pdf.set_fill_color(r, g, b)
-                        fill = True
-                    except:
-                        pdf.set_fill_color(255, 255, 255)
-                else:
-                    pdf.set_fill_color(255, 255, 255)
-                pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=fill)
+                pdf.set_fill_color(255, 255, 255)
+                pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
             pdf.ln()
 
         # Averages row
