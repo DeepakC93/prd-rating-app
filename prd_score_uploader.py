@@ -67,11 +67,17 @@ def generate_pdf(data, filename):
         pdf.cell(200, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
         pdf.set_font("Arial", size=10)
 
-        # Header Row
+        # Header Row with auto-wrap using multi_cell
+        y_before = pdf.get_y()
+        x_start = pdf.get_x()
+
         for i, h in enumerate(table_headers):
+            pdf.set_xy(x_start, y_before)
             pdf.set_fill_color(200, 200, 200)
-            pdf.cell(col_widths[i], 8, _sanitize_text(h), 1, 0, 'C', fill=True)
-        pdf.ln()
+            pdf.multi_cell(col_widths[i], 5, _sanitize_text(h), border=1, align='C', fill=True)
+            x_start += col_widths[i]
+
+        pdf.set_y(y_before + 15)
 
         # Data Rows
         for _, row in group.iterrows():
