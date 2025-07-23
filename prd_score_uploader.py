@@ -79,37 +79,43 @@ def generate_pdf(data, filename):
 
     for prd_name, group in data.groupby('PRD Name'):
         pdf.set_font("Arial", style='B', size=12)
-        pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True)
+        pdf.set_fill_color(230, 230, 250)  # light lavender for PRD title
+        pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
         pdf.set_font("Arial", size=10)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 190 / len(col_names)
 
         # Header
+        pdf.set_fill_color(200, 200, 200)
         for col in col_names:
-            pdf.cell(col_width, 10, col, border=1)
+            pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
         pdf.ln()
 
-        # Rows
+        # Rows with alternating background
+        fill = False
         for _, row in group.iterrows():
             for col in col_names:
                 value = str(row.get(col, ''))
-                pdf.cell(col_width, 10, value, border=1)
+                pdf.cell(col_width, 8, value, border=1, align='C', fill=fill)
             pdf.ln()
+            fill = not fill
 
         # Average row
         pdf.set_font("Arial", style='B', size=10)
-        pdf.cell(col_width, 10, "Average", border=1)
+        pdf.set_fill_color(220, 220, 250)
+        pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
         for col in col_names[1:]:
             avg_val = group[col].mean() if pd.api.types.is_numeric_dtype(group[col]) else ""
             if col == 'Total Score' and avg_val != "":
                 r, g, b = get_color_by_score(avg_val)
                 pdf.set_fill_color(r, g, b)
-                pdf.cell(col_width, 10, f"{avg_val:.2f}", border=1, fill=True)
+                pdf.cell(col_width, 8, f"{avg_val:.2f}", border=1, align='C', fill=True)
             else:
-                pdf.cell(col_width, 10, f"{avg_val:.2f}" if avg_val != "" else "", border=1)
+                pdf.set_fill_color(240, 240, 255)
+                pdf.cell(col_width, 8, f"{avg_val:.2f}" if avg_val != "" else "", border=1, align='C', fill=True)
         pdf.ln()
-        pdf.ln(5)
+        pdf.ln(4)
 
     pdf.output(filename)
 
@@ -193,3 +199,4 @@ if uploaded_file is not None:
 
     st.subheader("\U0001F50D Converted Score Table")
     st.dataframe(result_df)
+
