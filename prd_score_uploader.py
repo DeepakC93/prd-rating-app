@@ -158,6 +158,18 @@ def generate_pdf(data, filename):
     pdf.set_font("Arial", style='B', size=12)
     pdf.cell(0, 10, txt=f"Overall Average Score Across All PRDs: {overall_avg:.2f}", ln=True, align='C')
 
+    # Add mood image at bottom center
+    image_path = None
+    if overall_avg >= 9:
+        image_path = "mood_images/happy.png"
+    elif overall_avg >= 6:
+        image_path = "mood_images/meh.png"
+    else:
+        image_path = "mood_images/sad.png"
+
+    if image_path and os.path.exists(image_path):
+        pdf.image(image_path, x=125, y=pdf.get_y()+10, w=40)
+
     pdf.output(filename)
 
 # Streamlit App
