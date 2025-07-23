@@ -58,26 +58,30 @@ def generate_pdf(data, filename):
     pdf.ln(10)
 
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
-    col_widths = [45, 50, 50, 48, 65, 65, 65, 40]  # Slightly increased
+    total_width = 277 - 20  # usable width of landscape A4 minus margins
+    base_width = total_width / len(table_headers)
+    col_widths = [base_width] * len(table_headers)
 
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
         color = "🟢" if avg >= 9 else "🟠" if avg >= 6 else "🔴"
         pdf.set_font("Arial", style='B', size=12)
         pdf.cell(0, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
-        pdf.set_font("Arial", size=10)
+        pdf.set_font("Arial", size=9)
 
         # Header Row
         y_before = pdf.get_y()
         x_start = pdf.get_x()
         max_height = 0
 
+        header_cells = []
         for i, h in enumerate(table_headers):
             pdf.set_xy(x_start, y_before)
             pdf.set_fill_color(200, 200, 200)
             y_cell_start = pdf.get_y()
             pdf.multi_cell(col_widths[i], 5, _sanitize_text(h), border=1, align='C', fill=True)
             y_cell_end = pdf.get_y()
+            header_cells.append(y_cell_end - y_cell_start)
             max_height = max(max_height, y_cell_end - y_cell_start)
             x_start += col_widths[i]
 
@@ -107,7 +111,7 @@ def generate_pdf(data, filename):
 
         # Average row
         pdf.set_fill_color(220, 220, 220)
-        pdf.set_font("Arial", style='B', size=10)
+        pdf.set_font("Arial", style='B', size=9)
         pdf.cell(col_widths[0], 8, "Avg", 1, 0, 'C', fill=True)
         for i, key in enumerate(weights):
             avg_val = group[key].mean()
