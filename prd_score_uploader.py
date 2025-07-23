@@ -57,16 +57,53 @@ def generate_pdf(data, filename):
     pdf.cell(200, 10, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
     pdf.ln(10)
 
+    table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
+    col_widths = [35] + [22] * len(weights) + [28]
+
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
         color = "🟢" if avg >= 9 else "🟠" if avg >= 6 else "🔴"
         pdf.set_font("Arial", style='B', size=12)
         pdf.cell(200, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
         pdf.set_font("Arial", size=10)
+
+        # Header Row
+        for i, h in enumerate(table_headers):
+            pdf.set_fill_color(200, 200, 200)
+            pdf.cell(col_widths[i], 8, _sanitize_text(h), 1, 0, 'C', fill=True)
+        pdf.ln()
+
+        # Data Rows
         for _, row in group.iterrows():
-            pdf.cell(200, 8, txt=_sanitize_text(f"- Role: {row['Role']}, Score: {row['Total Score']:.1f}"), ln=True)
-        pdf.cell(200, 8, txt=_sanitize_text(f"→ Avg Score: {avg:.2f}"), ln=True)
-        pdf.ln(5)
+            row_vals = [row['Role']]
+            for key in weights:
+                score = row.get(key, 0)
+                row_vals.append(score)
+            row_vals.append(row['Total Score'])
+
+            for i, val in enumerate(row_vals):
+                if isinstance(val, (int, float)):
+                    if val >= 1.5:
+                        pdf.set_fill_color(0, 200, 0)  # Green
+                    elif val >= 0.5:
+                        pdf.set_fill_color(255, 165, 0)  # Orange
+                    else:
+                        pdf.set_fill_color(255, 0, 0)  # Red
+                    pdf.cell(col_widths[i], 8, str(val), 1, 0, 'C', fill=True)
+                else:
+                    pdf.set_fill_color(255, 255, 255)
+                    pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
+            pdf.ln()
+
+        # Average row
+        pdf.set_fill_color(220, 220, 220)
+        pdf.set_font("Arial", style='B', size=10)
+        pdf.cell(col_widths[0], 8, "Avg", 1, 0, 'C', fill=True)
+        for i, key in enumerate(weights):
+            avg_val = group[key].mean()
+            pdf.cell(col_widths[i+1], 8, f"{avg_val:.2f}", 1, 0, 'C', fill=True)
+        pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
+        pdf.ln(10)
 
     pdf.output(filename)
 
