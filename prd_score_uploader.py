@@ -15,6 +15,7 @@ canonical_params = {
     "depth of tech understanding delivered": "Tech depth",
     "prd name": "PRD Name",
     "role": "Role",
+    "comments": "Comments",
 }
 
 # Mapping for textual ratings to numeric scores
@@ -86,14 +87,14 @@ def generate_pdf(data, filename):
 
     for prd_name, group in data.groupby('PRD Name'):
         pdf.set_font("Arial", style='B', size=12)
-        pdf.set_fill_color(200, 220, 255)  # soft blue for PRD title
+        pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
         pdf.set_font("Arial", size=9)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
-        pdf.set_fill_color(180, 200, 255)  # soft blue for header
+        pdf.set_fill_color(180, 200, 255)
         pdf.set_font("Arial", style='B', size=9)
         for col in col_names:
             pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
@@ -107,6 +108,13 @@ def generate_pdf(data, filename):
                 pdf.cell(col_width, 8, value, border=1, align='C', fill=fill)
             pdf.ln()
             fill = not fill
+
+            # If comment is present, show below the row
+            comment = row.get('Comments', '').strip()
+            if comment:
+                pdf.set_font("Arial", style='I', size=8)
+                pdf.multi_cell(0, 6, f"Comment: {comment}", border=0)
+                pdf.set_font("Arial", size=9)
 
         pdf.set_font("Arial", style='B', size=9)
         pdf.set_fill_color(220, 220, 250)
@@ -170,6 +178,9 @@ if uploaded_file is not None:
     else:
         df['Role'] = 'Unknown'
 
+    if 'Comments' not in df.columns:
+        df['Comments'] = ''
+
     st.success("File uploaded and normalized!")
 
     all_scores = []
@@ -178,6 +189,7 @@ if uploaded_file is not None:
         scores['PRD Name'] = row.get('PRD Name', f"PRD-{idx+1}")
         scores['Role'] = row.get('Role', 'Unknown')
         scores['Total Score'] = total
+        scores['Comments'] = row.get('Comments', '')
         all_scores.append(scores)
 
     result_df = pd.DataFrame(all_scores)
