@@ -126,14 +126,29 @@ def generate_pdf(data, filename):
         for i, key in enumerate(weights):
             valid_vals = group[key].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
             avg_val = valid_vals.mean() if not valid_vals.empty else 0
-            pdf.set_fill_color(220, 220, 220)  # Neutral fill for parameter averages
+            pdf.set_fill_color(220, 220, 220)
             pdf.cell(col_widths[i+1], 8, f"{avg_val:.2f}", 1, 0, 'C', fill=True)
 
-        # Only apply color coding to the last total column
         r, g, b = get_color(avg)
         pdf.set_fill_color(r, g, b)
         pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
         pdf.ln(10)
+
+        # Add rationale for low score
+        if avg < 7:
+            lowest = []
+            for param in weights:
+                param_scores = group[param].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
+                avg_score = param_scores.mean() if not param_scores.empty else 0
+                if avg_score < 0.6 * max(score_map[param].values()):
+                    lowest.append(param)
+
+            if lowest:
+                reasons = ", ".join(lowest)
+                pdf.set_text_color(255, 0, 0)
+                pdf.set_font("Arial", style='', size=9)
+                pdf.multi_cell(0, 8, f"\nNote: This PRD scored low mainly due to weak performance in: {reasons}.")
+                pdf.set_text_color(0, 0, 0)
 
     pdf.output(filename)
 
