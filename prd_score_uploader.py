@@ -84,7 +84,6 @@ def generate_pdf(data, filename):
         pdf.set_font("Arial", size=10)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
-        role_names = [f"Rating {i+1}" for i in range(len(group))]
 
         header_line = ' | '.join(['Rating'] + list(weights.keys()) + ['Total Score'])
         pdf.multi_cell(0, 10, header_line)
