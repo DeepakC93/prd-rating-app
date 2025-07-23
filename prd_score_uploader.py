@@ -115,7 +115,11 @@ def generate_pdf(data, filename):
             row_vals.append(row['Total Score'])
 
             for i, val in enumerate(row_vals):
-                pdf.set_fill_color(255, 255, 255)
+                if i == len(row_vals) - 1:
+                    r, g, b = get_color(row['Total Score'])
+                    pdf.set_fill_color(r, g, b)
+                else:
+                    pdf.set_fill_color(255, 255, 255)
                 pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
             pdf.ln()
 
@@ -147,7 +151,12 @@ def generate_pdf(data, filename):
                 reasons = ", ".join(lowest)
                 pdf.set_text_color(255, 0, 0)
                 pdf.set_font("Arial", style='', size=9)
-                pdf.multi_cell(0, 8, f"\nNote: This PRD scored low mainly due to weak performance in: {reasons}.")
+                friendly_note = (
+                    "\nHeads-up: The overall rating for this PRD came out a bit low. "
+                    f"It may be worth revisiting areas like: {reasons}, which had relatively lower scores. "
+                    "Improving these could help boost future ratings!"
+                )
+                pdf.multi_cell(0, 8, _sanitize_text(friendly_note))
                 pdf.set_text_color(0, 0, 0)
 
     pdf.output(filename)
