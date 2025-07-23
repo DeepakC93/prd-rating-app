@@ -58,12 +58,13 @@ def generate_pdf(data, filename):
     pdf.ln(10)
 
     for prd, group in data.groupby('PRD Name'):
+        avg = group['Total Score'].mean()
+        color = "🟢" if avg >= 9 else "🟠" if avg >= 6 else "🔴"
         pdf.set_font("Arial", style='B', size=12)
-        pdf.cell(200, 10, txt=_sanitize_text(f"PRD: {prd}"), ln=True)
+        pdf.cell(200, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
         pdf.set_font("Arial", size=10)
         for _, row in group.iterrows():
             pdf.cell(200, 8, txt=_sanitize_text(f"- Role: {row['Role']}, Score: {row['Total Score']:.1f}"), ln=True)
-        avg = group['Total Score'].mean()
         pdf.cell(200, 8, txt=_sanitize_text(f"→ Avg Score: {avg:.2f}"), ln=True)
         pdf.ln(5)
 
@@ -102,8 +103,13 @@ if uploaded_file is not None:
     # Normalize PRD Name and Role columns too
     if 'PRD Name' in df.columns:
         df['PRD Name'] = df['PRD Name'].astype(str).str.strip()
+    else:
+        df['PRD Name'] = [f"PRD-{i+1}" for i in range(len(df))]
+
     if 'Role' in df.columns:
         df['Role'] = df['Role'].astype(str).str.strip()
+    else:
+        df['Role'] = 'Unknown'
 
     st.success("File uploaded and normalized!")
 
