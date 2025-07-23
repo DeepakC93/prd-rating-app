@@ -5,7 +5,7 @@ import tempfile
 import os
 from PIL import Image
 
-# Canonical parameter aliases
+# Canonical parameter aliases to standardize header names
 canonical_params = {
     "scope": "Scope",
     "design ready": "Design Ready",
@@ -18,7 +18,7 @@ canonical_params = {
     "comments": "Comments"
 }
 
-# Textual ratings mapped to numeric
+# Mapping for textual ratings to numeric scores
 score_map = {
     "Scope": {"not covered": 0, "partially covered": 0.5, "fully covered": 1},
     "Design Ready": {"not covered": 0, "partially covered": 0.5, "fully covered": 1.5},
@@ -28,7 +28,7 @@ score_map = {
     "Tech depth": {"not covered": 0, "partially covered": 0.5, "fully covered": 2},
 }
 
-# Parameter weights
+# Weights of each parameter
 weights = {
     "Scope": 1,
     "Design Ready": 1.5,
@@ -73,6 +73,7 @@ def generate_pdf(data, filename):
     color = get_color_by_score(overall_avg)
 
     pdf = FPDF(orientation='P', unit='mm', format='A4')
+    pdf.set_auto_page_break(auto=True, margin=10)
     pdf.add_page()
 
     logo_path = "logo.png"
@@ -92,12 +93,13 @@ def generate_pdf(data, filename):
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
+        pdf.set_font("Arial", size=8)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
-        pdf.set_font("Arial", style='B', size=8)
         pdf.set_fill_color(180, 200, 255)
+        pdf.set_font("Arial", style='B', size=8)
         for col in col_names:
             pdf.cell(col_width, 7, col, border=1, align='C', fill=True)
         pdf.ln()
@@ -106,13 +108,13 @@ def generate_pdf(data, filename):
         pdf.set_font("Arial", size=7)
         for _, row in group.iterrows():
             for col in col_names:
-                value = str(row.get(col, ''))[:30]  # Trim to fit
+                value = str(row.get(col, ''))[:40]
                 pdf.cell(col_width, 7, value, border=1, align='C', fill=fill)
             pdf.ln()
             fill = not fill
 
-        # Averages Row
-        pdf.set_font("Arial", style='B', size=7)
+        # Average row
+        pdf.set_font("Arial", style='B', size=8)
         pdf.set_fill_color(220, 220, 250)
         pdf.cell(col_width, 7, "Average", border=1, align='C', fill=True)
 
@@ -135,12 +137,11 @@ def generate_pdf(data, filename):
                 pdf.set_fill_color(240, 240, 255)
                 pdf.cell(col_width, 7, "", border=1, align='C', fill=True)
 
-        pdf.ln()
-        pdf.ln(3)
+        pdf.ln(5)
 
     pdf.output(filename)
 
-# Streamlit UI
+# Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
 
 logo = Image.open("logo.png")
@@ -188,7 +189,7 @@ if uploaded_file is not None:
     if 'Comments' not in df.columns:
         df['Comments'] = ''
 
-    st.success("✅ File uploaded and normalized!")
+    st.success("File uploaded and normalized!")
 
     all_scores = []
     for idx, row in df.iterrows():
@@ -202,7 +203,6 @@ if uploaded_file is not None:
     result_df = pd.DataFrame(all_scores)
     result_df = result_df[['PRD Name', 'Role'] + list(weights.keys()) + ['Total Score', 'Comments']]
 
-    # Generate PDF
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         generate_pdf(result_df, tmp.name)
 
@@ -217,22 +217,10 @@ if uploaded_file is not None:
 
         os.unlink(tmp.name)
 
-    # Streamlit Summary Section
     st.subheader("📊 Summary of PRD Scores")
     prd_summary = result_df.groupby("PRD Name")[["Total Score"]].mean().reset_index()
     prd_summary.columns = ["PRD Name", "Average Score"]
     st.dataframe(prd_summary)
 
-    # Show Comments per PRD
-    st.subheader("💬 PRD Comments")
-    for prd, group in result_df.groupby("PRD Name"):
-        comments = group['Comments'].dropna().unique()
-        if any(comments):
-            st.markdown(f"**{prd}**")
-            for comment in comments:
-                if comment.strip():
-                    st.markdown(f"- {comment.strip()}")
-
-    # Final Table
-    st.subheader("🔍 Detailed Rating Table")
+    st.subheader("🔍 Converted Score Table")
     st.dataframe(result_df)
