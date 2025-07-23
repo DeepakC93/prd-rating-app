@@ -72,12 +72,17 @@ def get_color(score):
 def generate_pdf(data, filename):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
-    pdf.set_font("Arial", style='B', size=18)
-    pdf.cell(0, 12, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
 
+    # Title
+    pdf.set_font("Arial", style='B', size=20)
+    pdf.set_text_color(40, 40, 100)
+    pdf.cell(0, 14, txt=_sanitize_text("\u2605 PRD Rating Report \u2605"), ln=True, align='C')
+
+    # Overall average and mood image
     overall_avg = data['Total Score'].mean()
     pdf.ln(5)
-    pdf.set_font("Arial", style='B', size=12)
+    pdf.set_font("Arial", style='B', size=13)
+    pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, txt=f"Overall Average Score Across All PRDs: {overall_avg:.2f}", ln=True, align='C')
 
     image_path = None
@@ -89,10 +94,11 @@ def generate_pdf(data, filename):
         image_path = "mood_images/sad.png"
 
     if image_path and os.path.exists(image_path):
-        pdf.ln(5)
-        pdf.image(image_path, x=120, y=40, w=50)
-        pdf.ln(60)
+        pdf.ln(4)
+        pdf.image(image_path, x=125, w=40)
+        pdf.ln(12)
 
+    # PRD-wise table
     pdf.set_font("Arial", style='B', size=11)
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
     col_width = 277 / len(table_headers)
