@@ -51,38 +51,34 @@ def _sanitize_text(text):
     return str(text).encode("latin-1", "replace").decode("latin-1")
 
 def generate_pdf(data, filename):
-    pdf = FPDF()
+    pdf = FPDF(orientation='L', unit='mm', format='A4')  # Landscape for wider tables
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
+    pdf.cell(0, 10, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
     pdf.ln(10)
 
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
-    col_widths = [40, 45, 45, 43, 60, 60, 60, 35]  # Adjusted for better balance
+    col_widths = [45, 50, 50, 48, 65, 65, 65, 40]  # Slightly increased
 
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
         color = "🟢" if avg >= 9 else "🟠" if avg >= 6 else "🔴"
         pdf.set_font("Arial", style='B', size=12)
-        pdf.cell(200, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
+        pdf.cell(0, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
         pdf.set_font("Arial", size=10)
 
-        # Header Row with auto-wrap and proper alignment
+        # Header Row
         y_before = pdf.get_y()
         x_start = pdf.get_x()
-
         max_height = 0
+
         for i, h in enumerate(table_headers):
             pdf.set_xy(x_start, y_before)
             pdf.set_fill_color(200, 200, 200)
-
             y_cell_start = pdf.get_y()
             pdf.multi_cell(col_widths[i], 5, _sanitize_text(h), border=1, align='C', fill=True)
             y_cell_end = pdf.get_y()
-
-            cell_height = y_cell_end - y_cell_start
-            max_height = max(max_height, cell_height)
-
+            max_height = max(max_height, y_cell_end - y_cell_start)
             x_start += col_widths[i]
 
         pdf.set_y(y_before + max_height)
@@ -98,11 +94,11 @@ def generate_pdf(data, filename):
             for i, val in enumerate(row_vals):
                 if isinstance(val, (int, float)):
                     if val >= 1.5:
-                        pdf.set_fill_color(0, 200, 0)  # Green
+                        pdf.set_fill_color(0, 200, 0)
                     elif val >= 0.5:
-                        pdf.set_fill_color(255, 165, 0)  # Orange
+                        pdf.set_fill_color(255, 165, 0)
                     else:
-                        pdf.set_fill_color(255, 0, 0)  # Red
+                        pdf.set_fill_color(255, 0, 0)
                     pdf.cell(col_widths[i], 8, str(val), 1, 0, 'C', fill=True)
                 else:
                     pdf.set_fill_color(255, 255, 255)
@@ -136,7 +132,6 @@ if uploaded_file is not None:
 
     df.columns = df.columns.str.strip().str.lower()
 
-    # Rename uploaded columns to canonical names
     rename_dict = {}
     for col in df.columns:
         for alias, canon in canonical_params.items():
@@ -146,12 +141,10 @@ if uploaded_file is not None:
 
     df.rename(columns=rename_dict, inplace=True)
 
-    # Normalize relevant scoring cells
     for canon in weights.keys():
         if canon in df.columns:
             df[canon] = df[canon].astype(str).str.strip().str.lower()
 
-    # Normalize PRD Name and Role columns too
     if 'PRD Name' in df.columns:
         df['PRD Name'] = df['PRD Name'].astype(str).str.strip()
     else:
@@ -164,7 +157,6 @@ if uploaded_file is not None:
 
     st.success("File uploaded and normalized!")
 
-    # Convert scores
     all_scores = []
     for idx, row in df.iterrows():
         scores, total = convert_to_score(row)
@@ -177,7 +169,6 @@ if uploaded_file is not None:
     st.subheader("🔍 Converted Score Table")
     st.dataframe(result_df)
 
-    # Generate PDF
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         generate_pdf(result_df, tmp.name)
         st.download_button(
