@@ -70,16 +70,31 @@ def get_color(score):
         return (255, 0, 0)  # Red
 
 def generate_pdf(data, filename):
-    pdf = FPDF(orientation='L', unit='mm', format=(297, 250))  # Wider and taller
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font("Arial", style='B', size=18)
     pdf.cell(0, 12, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
-    pdf.ln(10)
 
+    overall_avg = data['Total Score'].mean()
+    pdf.ln(5)
+    pdf.set_font("Arial", style='B', size=12)
+    pdf.cell(0, 10, txt=f"Overall Average Score Across All PRDs: {overall_avg:.2f}", ln=True, align='C')
+
+    image_path = None
+    if overall_avg >= 9:
+        image_path = "mood_images/happy.png"
+    elif overall_avg >= 6:
+        image_path = "mood_images/meh.png"
+    else:
+        image_path = "mood_images/sad.png"
+
+    if image_path and os.path.exists(image_path):
+        pdf.image(image_path, x=250, y=15, w=30)
+
+    pdf.ln(15)
+    pdf.set_font("Arial", style='B', size=11)
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
-    total_width = 277 - 20
-    base_width = total_width / len(table_headers)
-    col_widths = [base_width + 2 if i == 0 else base_width for i in range(len(table_headers))]
+    col_width = 277 / len(table_headers)
 
     for prd, group in data.groupby('PRD Name'):
         avg = group['Total Score'].mean()
@@ -106,20 +121,9 @@ def generate_pdf(data, filename):
                 pdf.set_text_color(0, 0, 0)
 
         pdf.set_font("Arial", style='B', size=9)
-
-        y_before = pdf.get_y()
-        x_start = pdf.get_x()
-        max_height = 0
-        for i, h in enumerate(table_headers):
-            pdf.set_xy(x_start, y_before)
-            pdf.set_fill_color(200, 200, 200)
-            y_cell_start = pdf.get_y()
-            pdf.multi_cell(col_widths[i], 6, _sanitize_text(h), border=1, align='C', fill=True)
-            y_cell_end = pdf.get_y()
-            max_height = max(max_height, y_cell_end - y_cell_start)
-            x_start += col_widths[i]
-
-        pdf.set_y(y_before + max_height)
+        for header in table_headers:
+            pdf.cell(col_width, 8, _sanitize_text(header), 1, 0, 'C')
+        pdf.ln()
         pdf.set_font("Arial", size=9)
 
         for _, row in group.iterrows():
@@ -134,40 +138,21 @@ def generate_pdf(data, filename):
                 row_vals.append(val_display)
             row_vals.append(row['Total Score'])
 
-            for i, val in enumerate(row_vals):
-                pdf.set_fill_color(255, 255, 255)
-                pdf.cell(col_widths[i], 8, _sanitize_text(str(val)), 1, 0, 'L', fill=True)
+            for val in row_vals:
+                pdf.cell(col_width, 8, _sanitize_text(str(val)), 1, 0, 'L')
             pdf.ln()
 
-        pdf.set_fill_color(220, 220, 220)
         pdf.set_font("Arial", style='B', size=9)
-        pdf.cell(col_widths[0], 8, "Avg", 1, 0, 'C', fill=True)
-        for i, key in enumerate(weights):
+        pdf.cell(col_width, 8, "Avg", 1, 0, 'C')
+        for key in weights:
             valid_vals = group[key].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
             avg_val = valid_vals.mean() if not valid_vals.empty else 0
-            pdf.set_fill_color(220, 220, 220)
-            pdf.cell(col_widths[i+1], 8, f"{avg_val:.2f}", 1, 0, 'C', fill=True)
+            pdf.cell(col_width, 8, f"{avg_val:.2f}", 1, 0, 'C')
 
         r, g, b = get_color(avg)
         pdf.set_fill_color(r, g, b)
-        pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
+        pdf.cell(col_width, 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
         pdf.ln(10)
-
-    overall_avg = data['Total Score'].mean()
-    pdf.ln(10)
-    pdf.set_font("Arial", style='B', size=12)
-    pdf.cell(0, 10, txt=f"Overall Average Score Across All PRDs: {overall_avg:.2f}", ln=True, align='C')
-
-    image_path = None
-    if overall_avg >= 9:
-        image_path = "mood_images/happy.png"
-    elif overall_avg >= 6:
-        image_path = "mood_images/meh.png"
-    else:
-        image_path = "mood_images/sad.png"
-
-    if image_path and os.path.exists(image_path):
-        pdf.image(image_path, x=(297 - 40) / 2, y=pdf.get_y() + 10, w=40)
 
     pdf.output(filename)
 
