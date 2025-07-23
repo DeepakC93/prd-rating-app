@@ -1,4 +1,4 @@
-import streamlit as st
+""import streamlit as st
 import pandas as pd
 from fpdf import FPDF
 import tempfile
@@ -89,6 +89,14 @@ def generate_pdf(data, filename):
                 pdf.cell(col_width, 10, value, border=1)
             pdf.ln()
 
+        # Average row
+        pdf.set_font("Arial", style='B', size=10)
+        pdf.set_fill_color(220, 220, 220)
+        pdf.cell(col_width, 10, "Average", border=1, fill=True)
+        for col in col_names[1:]:
+            avg_val = group[col].mean() if pd.api.types.is_numeric_dtype(group[col]) else ""
+            pdf.cell(col_width, 10, f"{avg_val:.2f}" if avg_val != "" else "", border=1, fill=(col == 'Total Score'))
+        pdf.ln()
         pdf.ln(5)
 
     pdf.output(filename)
