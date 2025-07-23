@@ -4,14 +4,24 @@ from fpdf import FPDF
 import tempfile
 import os
 
+# Canonical parameter aliases to standardize header names
+canonical_params = {
+    "scope": "Scope",
+    "design ready": "Design Ready",
+    "prd handover": "PRD Handover",
+    "requirement changes post handover": "Requirement changes post handover",
+    "completeness of requirement coverage": "Completeness of Requirement Coverage",
+    "depth of tech understanding delivered": "Depth of tech Understanding Delivered",
+}
+
 # Mapping for textual ratings to numeric scores
 score_map = {
-    "Scope": {"Not covered": 0, "Partially covered": 0.5, "Fully covered": 1},
-    "Design Ready": {"Not covered": 0, "Partially covered": 0.5, "Fully covered": 1.5},
-    "PRD Handover": {"No": 0, "Yes": 1.5},
-    "Requirement changes post handover": {"Changed N Time": 0, "Changed 1 Time": 0.5, "No changes": 2},
-    "Completeness of Requirement Coverage": {"Not covered": 0, "Partially covered": 0.5, "Fully covered": 2},
-    "Depth of tech Understanding Delivered": {"Not covered": 0, "Partially covered": 0.5, "Fully covered": 2},
+    "Scope": {"not covered": 0, "partially covered": 0.5, "fully covered": 1},
+    "Design Ready": {"not covered": 0, "partially covered": 0.5, "fully covered": 1.5},
+    "PRD Handover": {"no": 0, "yes": 1.5},
+    "Requirement changes post handover": {"changed n time": 0, "changed 1 time": 0.5, "no changes": 2},
+    "Completeness of Requirement Coverage": {"not covered": 0, "partially covered": 0.5, "fully covered": 2},
+    "Depth of tech Understanding Delivered": {"not covered": 0, "partially covered": 0.5, "fully covered": 2},
 }
 
 # Weights of each parameter
@@ -26,12 +36,12 @@ weights = {
 
 def convert_to_score(row):
     scores = {}
-    for key in weights:
-        val = row.get(key, '')
+    for param_key in weights:
+        val = row.get(param_key, '')
         val_normalized = str(val).strip().lower()
-        options = {k.lower(): v for k, v in score_map[key].items()}
+        options = score_map.get(param_key, {})
         mapped = options.get(val_normalized, 0)
-        scores[key] = mapped
+        scores[param_key] = mapped
     total = sum(scores.values())
     return scores, total
 
@@ -70,9 +80,24 @@ if uploaded_file is not None:
     else:
         df = pd.read_excel(uploaded_file)
 
-    df.columns = df.columns.str.strip()  # Normalize headers
+    df.columns = df.columns.str.strip().str.lower()
 
-    st.success("File uploaded successfully!")
+    # Rename uploaded columns to canonical names
+    rename_dict = {}
+    for col in df.columns:
+        for alias, canon in canonical_params.items():
+            if alias in col:
+                rename_dict[col] = canon
+                break
+
+    df.rename(columns=rename_dict, inplace=True)
+
+    # Normalize the relevant cells for scoring
+    for canon in weights.keys():
+        if canon in df.columns:
+            df[canon] = df[canon].astype(str).str.strip().str.lower()
+
+    st.success("File uploaded and normalized!")
 
     # Convert scores
     all_scores = []
@@ -91,7 +116,7 @@ if uploaded_file is not None:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         generate_pdf(result_df, tmp.name)
         st.download_button(
-            label="📥 Download PDF Report",
+            label="📅 Download PDF Report",
             data=open(tmp.name, "rb").read(),
             file_name="prd_report.pdf",
             mime="application/pdf"
