@@ -71,8 +71,8 @@ def get_color(score):
 def generate_pdf(data, filename):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(0, 10, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
+    pdf.set_font("Arial", style='B', size=16)
+    pdf.cell(0, 12, txt=_sanitize_text("PRD Rating Report"), ln=True, align='C')
     pdf.ln(10)
 
     table_headers = ['Role'] + list(weights.keys()) + ['Total Score']
