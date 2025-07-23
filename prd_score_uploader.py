@@ -108,13 +108,16 @@ def generate_pdf(data, filename):
             pdf.ln()
             fill = not fill
 
-        # Draw average row with fixes
+        # Draw average row with manual numeric conversion
         pdf.set_font("Arial", style='B', size=9)
         pdf.set_fill_color(220, 220, 250)
         pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
+
         for col in col_names[1:]:
-            if pd.api.types.is_numeric_dtype(group[col]):
-                avg_val = group[col].mean()
+            try:
+                numeric_vals = pd.to_numeric(group[col], errors='coerce')
+                avg_val = numeric_vals.mean()
+
                 if pd.isna(avg_val):
                     pdf.set_fill_color(240, 240, 255)
                     pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
@@ -125,7 +128,7 @@ def generate_pdf(data, filename):
                     else:
                         pdf.set_fill_color(240, 240, 255)
                     pdf.cell(col_width, 8, f"{avg_val:.2f}", border=1, align='C', fill=True)
-            else:
+            except Exception:
                 pdf.set_fill_color(240, 240, 255)
                 pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
 
