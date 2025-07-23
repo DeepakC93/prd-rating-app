@@ -68,10 +68,7 @@ def generate_pdf(data, filename):
     pdf.cell(200, 10, txt="PRD Rating Report", ln=True, align='C')
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt=f"Overall Average Score: {overall_avg:.2f}", ln=True, align='C')
-    pdf.image(mood_image_path, x=65, w=80)
-    pdf.ln(10)
     pdf.ln(5)
-
     pdf.image(mood_image_path, x=65, w=80)
     pdf.ln(10)
 
