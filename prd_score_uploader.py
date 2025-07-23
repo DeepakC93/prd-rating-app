@@ -85,6 +85,22 @@ def generate_pdf(data, filename):
         color = "🟢" if avg >= 9 else "🟠" if avg >= 6 else "🔴"
         pdf.set_font("Arial", style='B', size=12)
         pdf.cell(0, 10, txt=_sanitize_text(f"{color} PRD: {prd}"), ln=True)
+
+        if avg < 7:
+            lowest = []
+            for param in weights:
+                param_scores = group[param].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
+                avg_score = param_scores.mean() if not param_scores.empty else 0
+                if avg_score < 0.6 * max(score_map[param].values()):
+                    lowest.append(param)
+
+            if lowest:
+                reasons = ", ".join(lowest)
+                pdf.set_text_color(255, 0, 0)
+                pdf.set_font("Arial", style='', size=9)
+                pdf.multi_cell(0, 8, f"Note: This PRD's score appears to be on the lower side, mainly due to relatively lower ratings in: {reasons}.")
+                pdf.set_text_color(0, 0, 0)
+
         pdf.set_font("Arial", style='B', size=9)
 
         y_before = pdf.get_y()
@@ -133,26 +149,11 @@ def generate_pdf(data, filename):
         pdf.cell(col_widths[-1], 8, f"{avg:.2f}", 1, 0, 'C', fill=True)
         pdf.ln(10)
 
-        if avg < 7:
-            lowest = []
-            for param in weights:
-                param_scores = group[param].apply(lambda x: x if isinstance(x, (int, float)) else None).dropna()
-                avg_score = param_scores.mean() if not param_scores.empty else 0
-                if avg_score < 0.6 * max(score_map[param].values()):
-                    lowest.append(param)
-
-            if lowest:
-                reasons = ", ".join(lowest)
-                pdf.set_text_color(255, 0, 0)
-                pdf.set_font("Arial", style='', size=9)
-                pdf.multi_cell(0, 8, f"\nNote: This PRD's score appears to be on the lower side, mainly due to relatively lower ratings in: {reasons}.")
-                pdf.set_text_color(0, 0, 0)
-
     pdf.output(filename)
 
 # Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
-st.title("📊 PRD Rating Report Generator")
+st.title("\U0001F4CA PRD Rating Report Generator")
 st.markdown("Upload the PRD score sheet (CSV or Excel) and get the report in PDF format.")
 
 uploaded_file = st.file_uploader("Upload PRD Rating Sheet", type=["csv", "xlsx"])
@@ -201,13 +202,13 @@ if uploaded_file is not None:
     result_df = pd.DataFrame(all_scores)
     result_df = result_df[['PRD Name', 'Role'] + [col for col in result_df.columns if col not in ['PRD Name', 'Role']]]
 
-    st.subheader("🔍 Converted Score Table")
+    st.subheader("\U0001F50D Converted Score Table")
     st.dataframe(result_df)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         generate_pdf(result_df, tmp.name)
         st.download_button(
-            label="📅 Download PDF Report",
+            label="\U0001F4C5 Download PDF Report",
             data=open(tmp.name, "rb").read(),
             file_name="prd_report.pdf",
             mime="application/pdf"
