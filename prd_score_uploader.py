@@ -70,8 +70,45 @@ def get_color(score):
         return (255, 0, 0)  # Red
 
 def generate_pdf(data, filename):
-    # [No changes in the generate_pdf function]
-    ...
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=10)
+
+    col_names = [col for col in data.columns if col != 'PRD Name']
+    col_widths = [pdf.get_string_width(col) + 10 for col in col_names]
+    col_widths = [max(w, 25) for w in col_widths]
+
+    line_height = 8
+    max_width = sum(col_widths)
+    page_width = pdf.w - 2 * pdf.l_margin
+    scale = page_width / max_width
+    col_widths = [w * scale for w in col_widths]
+
+    pdf.set_fill_color(230, 230, 230)
+    pdf.set_font(style="B")
+    for i, col in enumerate(col_names):
+        pdf.cell(col_widths[i], line_height, _sanitize_text(col), border=1, align='C', fill=True)
+    pdf.ln(line_height)
+    pdf.set_font(style="")
+
+    for _, row in data.iterrows():
+        for i, col in enumerate(col_names):
+            val = row[col]
+            if col == "Total Score":
+                if isinstance(val, (int, float)):
+                    r, g, b = get_color(val)
+                    pdf.set_fill_color(r, g, b)
+                else:
+                    pdf.set_fill_color(255, 255, 255)
+            else:
+                pdf.set_fill_color(255, 255, 255)
+
+            text = str(val)
+            pdf.cell(col_widths[i], line_height, _sanitize_text(text), border=1, align='C', fill=True)
+        pdf.ln(line_height)
+
+    pdf.output(filename)
 
 # Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
