@@ -58,7 +58,7 @@ def convert_to_score(row):
     return scores, normalized_total
 
 def _sanitize_text(text):
-    return str(text).encode("latin-1", "replace").decode("latin-1")
+    return str(text).encode("latin-1", "ignore").decode("latin-1")
 
 def generate_pdf(data, filename):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
