@@ -1,5 +1,3 @@
-# Updated full Python code with fixed average total coloring and increased spacing between tables
-
 import streamlit as st
 import pandas as pd
 from fpdf import FPDF
@@ -7,7 +5,7 @@ import tempfile
 import os
 from PIL import Image
 
-# Canonical parameter aliases
+# Canonical parameter aliases to standardize header names
 canonical_params = {
     "scope": "Scope",
     "design ready": "Design Ready",
@@ -20,7 +18,7 @@ canonical_params = {
     "comments": "Comments"
 }
 
-# Mapping textual ratings to numeric scores
+# Mapping for textual ratings to numeric scores
 score_map = {
     "Scope": {"not covered": 0, "partially covered": 0.5, "fully covered": 1},
     "Design Ready": {"not covered": 0, "partially covered": 0.5, "fully covered": 1.5},
@@ -30,7 +28,7 @@ score_map = {
     "Tech depth": {"not covered": 0, "partially covered": 0.5, "fully covered": 2},
 }
 
-# Parameter weights
+# Weights of each parameter
 weights = {
     "Scope": 1,
     "Design Ready": 1.5,
@@ -44,17 +42,21 @@ def convert_to_score(row):
     scores = {}
     total_score = 0
     total_weight = 0
+
     for param_key in weights:
         val = row.get(param_key, '')
         val_normalized = str(val).strip().lower()
+
         if val_normalized == "not applicable":
             scores[param_key] = "N/A"
             continue
+
         mapped = score_map.get(param_key, {}).get(val_normalized, 0)
         display_val = f"{val.title()} ({mapped})"
         scores[param_key] = display_val
         total_score += mapped
         total_weight += weights[param_key]
+
     normalized_total = round(total_score * 10 / total_weight, 2) if total_weight else 0
     return scores, normalized_total
 
@@ -73,7 +75,6 @@ def generate_pdf(data, filename):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
 
-    # Logo
     logo_path = "logo.png"
     if os.path.exists(logo_path):
         pdf.image(logo_path, x=10, y=10, w=30)
@@ -90,59 +91,58 @@ def generate_pdf(data, filename):
     for prd_name, group in data.groupby('PRD Name'):
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
-        pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
-        pdf.set_font("Arial", size=8)
+        pdf.cell(0, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
-        # Table header
         pdf.set_fill_color(180, 200, 255)
         pdf.set_font("Arial", style='B', size=8)
         for col in col_names:
-            pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
+            pdf.cell(col_width, 7, col, border=1, align='C', fill=True)
         pdf.ln()
 
-        # Table rows
+        pdf.set_font("Arial", size=7)
         fill = False
-        pdf.set_font("Arial", size=8)
         for _, row in group.iterrows():
             for col in col_names:
-                value = str(row.get(col, ''))
-                pdf.cell(col_width, 8, value, border=1, align='C', fill=fill)
+                text = str(row.get(col, ''))
+                if len(text) > 20:
+                    text = text[:20] + "…"  # truncate long text
+                pdf.cell(col_width, 6, text, border=1, align='C', fill=fill)
             pdf.ln()
             fill = not fill
 
         # Average row
-        pdf.set_font("Arial", style='B', size=8)
+        pdf.set_font("Arial", style='B', size=7)
         pdf.set_fill_color(220, 220, 250)
-        pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
+        pdf.cell(col_width, 6, "Average", border=1, align='C', fill=True)
 
         for col in col_names[1:]:
             try:
                 numeric_vals = pd.to_numeric(group[col].astype(str).str.extract(r'([\d.]+)')[0], errors='coerce')
                 avg_val = numeric_vals.mean()
-
                 if pd.isna(avg_val):
                     pdf.set_fill_color(240, 240, 255)
-                    pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
+                    pdf.cell(col_width, 6, "", border=1, align='C', fill=True)
                 else:
                     if col == 'Total Score':
                         r, g, b = get_color_by_score(avg_val)
                         pdf.set_fill_color(r, g, b)
                     else:
                         pdf.set_fill_color(240, 240, 255)
-                    pdf.cell(col_width, 8, f"{avg_val:.2f}", border=1, align='C', fill=True)
+                    pdf.cell(col_width, 6, f"{avg_val:.2f}", border=1, align='C', fill=True)
             except Exception:
                 pdf.set_fill_color(240, 240, 255)
-                pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
+                pdf.cell(col_width, 6, "", border=1, align='C', fill=True)
 
         pdf.ln()
-        pdf.ln(8)  # spacing between tables
+        pdf.ln(8)  # spacing between PRD tables
 
     pdf.output(filename)
 
-# Streamlit App
+# ----------------------------- Streamlit App ----------------------------------
+
 st.set_page_config(page_title="PRD Rating Report Generator")
 
 logo = Image.open("logo.png")
