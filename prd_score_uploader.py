@@ -92,19 +92,17 @@ def generate_pdf(data, filename):
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
-        pdf.set_font("Arial", size=8)
+        pdf.set_font("Arial", size=9)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
-        # Header row
         pdf.set_fill_color(180, 200, 255)
-        pdf.set_font("Arial", style='B', size=8)
+        pdf.set_font("Arial", style='B', size=9)
         for col in col_names:
             pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
         pdf.ln()
 
-        # Table rows
         fill = False
         pdf.set_font("Arial", size=8)
         for _, row in group.iterrows():
@@ -114,14 +112,14 @@ def generate_pdf(data, filename):
             pdf.ln()
             fill = not fill
 
-        # Average row
+        # Add average row
         pdf.set_font("Arial", style='B', size=8)
         pdf.set_fill_color(220, 220, 250)
         pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
 
         for col in col_names[1:]:
             try:
-                numeric_vals = pd.to_numeric(group[col].astype(str).str.extract(r'([\d.]+)')[0], errors='coerce')
+                numeric_vals = pd.to_numeric(group[col].str.extract(r'([\d.]+)')[0], errors='coerce')
                 avg_val = numeric_vals.mean()
 
                 if pd.isna(avg_val):
@@ -133,14 +131,13 @@ def generate_pdf(data, filename):
                         pdf.set_fill_color(r, g, b)
                     else:
                         pdf.set_fill_color(240, 240, 255)
-
                     pdf.cell(col_width, 8, f"{avg_val:.2f}", border=1, align='C', fill=True)
-
-            except Exception as e:
+            except Exception:
                 pdf.set_fill_color(240, 240, 255)
                 pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
 
-        pdf.ln(6)
+        pdf.ln()
+        pdf.ln(10)  # <-- increased spacing between PRD blocks
 
     pdf.output(filename)
 
