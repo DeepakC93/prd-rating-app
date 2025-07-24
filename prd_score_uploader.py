@@ -5,7 +5,7 @@ import tempfile
 import os
 from PIL import Image
 
-# Canonical parameter aliases to standardize header names
+# Canonical parameter aliases
 canonical_params = {
     "scope": "Scope",
     "design ready": "Design Ready",
@@ -18,7 +18,7 @@ canonical_params = {
     "comments": "Comments"
 }
 
-# Mapping for textual ratings to numeric scores
+# Score mapping
 score_map = {
     "Scope": {"not covered": 0, "partially covered": 0.5, "fully covered": 1},
     "Design Ready": {"not covered": 0, "partially covered": 0.5, "fully covered": 1.5},
@@ -28,7 +28,6 @@ score_map = {
     "Tech depth": {"not covered": 0, "partially covered": 0.5, "fully covered": 2},
 }
 
-# Weights of each parameter
 weights = {
     "Scope": 1,
     "Design Ready": 1.5,
@@ -89,30 +88,40 @@ def generate_pdf(data, filename):
     pdf.ln(10)
 
     for prd_name, group in data.groupby('PRD Name'):
+        if pdf.get_y() > 250:
+            pdf.add_page()
+
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
-        pdf.set_font("Arial", size=9)
+        pdf.set_font("Arial", size=8)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
+        # Header row
         pdf.set_fill_color(180, 200, 255)
-        pdf.set_font("Arial", style='B', size=9)
+        pdf.set_font("Arial", style='B', size=8)
         for col in col_names:
             pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
         pdf.ln()
 
+        # Table rows
         fill = False
         pdf.set_font("Arial", size=8)
         for _, row in group.iterrows():
+            if pdf.get_y() > 270:
+                pdf.add_page()
             for col in col_names:
                 value = str(row.get(col, ''))
                 pdf.cell(col_width, 8, value, border=1, align='C', fill=fill)
             pdf.ln()
             fill = not fill
 
-        # Add average row
+        # Average row
+        if pdf.get_y() > 270:
+            pdf.add_page()
+
         pdf.set_font("Arial", style='B', size=8)
         pdf.set_fill_color(220, 220, 250)
         pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
@@ -136,8 +145,7 @@ def generate_pdf(data, filename):
                 pdf.set_fill_color(240, 240, 255)
                 pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
 
-        pdf.ln()
-        pdf.ln(10)  # <-- increased spacing between PRD blocks
+        pdf.ln(12)
 
     pdf.output(filename)
 
