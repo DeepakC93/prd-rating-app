@@ -73,7 +73,6 @@ def generate_pdf(data, filename):
     color = get_color_by_score(overall_avg)
 
     pdf = FPDF(orientation='P', unit='mm', format='A4')
-    pdf.set_auto_page_break(auto=True, margin=10)
     pdf.add_page()
 
     logo_path = "logo.png"
@@ -98,46 +97,50 @@ def generate_pdf(data, filename):
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
+        # Header row
         pdf.set_fill_color(180, 200, 255)
         pdf.set_font("Arial", style='B', size=8)
         for col in col_names:
-            pdf.cell(col_width, 7, col, border=1, align='C', fill=True)
+            pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
         pdf.ln()
 
+        # Table rows
         fill = False
-        pdf.set_font("Arial", size=7)
+        pdf.set_font("Arial", size=8)
         for _, row in group.iterrows():
             for col in col_names:
-                value = str(row.get(col, ''))[:40]
-                pdf.cell(col_width, 7, value, border=1, align='C', fill=fill)
+                value = str(row.get(col, ''))
+                pdf.cell(col_width, 8, value, border=1, align='C', fill=fill)
             pdf.ln()
             fill = not fill
 
         # Average row
         pdf.set_font("Arial", style='B', size=8)
         pdf.set_fill_color(220, 220, 250)
-        pdf.cell(col_width, 7, "Average", border=1, align='C', fill=True)
+        pdf.cell(col_width, 8, "Average", border=1, align='C', fill=True)
 
         for col in col_names[1:]:
             try:
-                numeric_vals = pd.to_numeric(group[col].str.extract(r'([\d.]+)')[0], errors='coerce')
+                numeric_vals = pd.to_numeric(group[col].astype(str).str.extract(r'([\d.]+)')[0], errors='coerce')
                 avg_val = numeric_vals.mean()
 
                 if pd.isna(avg_val):
                     pdf.set_fill_color(240, 240, 255)
-                    pdf.cell(col_width, 7, "", border=1, align='C', fill=True)
+                    pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
                 else:
                     if col == 'Total Score':
                         r, g, b = get_color_by_score(avg_val)
                         pdf.set_fill_color(r, g, b)
                     else:
                         pdf.set_fill_color(240, 240, 255)
-                    pdf.cell(col_width, 7, f"{avg_val:.2f}", border=1, align='C', fill=True)
-            except Exception:
-                pdf.set_fill_color(240, 240, 255)
-                pdf.cell(col_width, 7, "", border=1, align='C', fill=True)
 
-        pdf.ln(5)
+                    pdf.cell(col_width, 8, f"{avg_val:.2f}", border=1, align='C', fill=True)
+
+            except Exception as e:
+                pdf.set_fill_color(240, 240, 255)
+                pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
+
+        pdf.ln(6)
 
     pdf.output(filename)
 
