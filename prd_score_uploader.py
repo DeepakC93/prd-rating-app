@@ -91,6 +91,18 @@ def generate_pdf(data, filename):
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
+
+        prd_avg = group['Total Score'].mean()
+        if prd_avg < 7:
+            pdf.set_font("Arial", style='', size=9)
+            pdf.set_text_color(105, 105, 105)  # dark gray
+            pdf.multi_cell(0, 6,
+                "Note: This PRD has an average score below 7. "
+                "Consider reviewing requirement clarity, tech depth, or scope alignment for improvements.",
+                align='L'
+            )
+            pdf.set_text_color(0, 0, 0)
+
         pdf.set_font("Arial", size=8)
 
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
@@ -141,6 +153,7 @@ def generate_pdf(data, filename):
         pdf.ln(8)  # spacing between tables
 
     pdf.output(filename)
+
 
 # Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
