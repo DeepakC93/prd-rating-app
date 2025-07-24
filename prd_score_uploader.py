@@ -105,7 +105,7 @@ def generate_pdf(data, filename):
 
         # Table rows
         fill = False
-        pdf.set_font("Arial", size=8)
+        pdf.set_font("Arial", size=6)
         for _, row in group.iterrows():
             for col in col_names:
                 value = str(row.get(col, ''))
