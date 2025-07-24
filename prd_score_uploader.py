@@ -109,7 +109,7 @@ def generate_pdf(data, filename):
         for _, row in group.iterrows():
             for col in col_names:
                 value = str(row.get(col, ''))
-                pdf.cell(col_width, 8, value, border=1, align='C', fill=fill)
+                pdf.cell(col_width, 10, value, border=1, align='C', fill=fill)
             pdf.ln()
             fill = not fill
 
