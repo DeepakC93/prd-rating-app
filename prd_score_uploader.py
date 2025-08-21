@@ -144,18 +144,19 @@ def generate_pdf(data, filename):
                 pdf.set_fill_color(240, 240, 255)
                 pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
 
-        pdf.ln(5)
+        pdf.ln(10)  # space after table
 
-        # Comments section
+        # Comments section (highlighted)
         comments = group['Comments'].dropna().unique()
         comments = [c.strip() for c in comments if c.strip()]
         if comments:
             pdf.set_font("Arial", style='B', size=9)
             pdf.cell(0, 6, "Comments:", ln=True)
             pdf.set_font("Arial", size=8)
+            pdf.set_fill_color(245, 245, 245)  # light gray box
             for c in comments:
-                pdf.multi_cell(0, 5, f"- {c}")
-            pdf.ln(3)
+                pdf.multi_cell(0, 6, f"- {c}", fill=True)
+            pdf.ln(5)
 
         pdf.ln(8)  # spacing between PRDs
 
