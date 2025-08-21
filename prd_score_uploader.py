@@ -206,7 +206,7 @@ st.set_page_config(page_title="PRD Rating Report Generator")
 
 # Top logos aligned left & right
 with st.container():
-    col_left, col_spacer, col_right = st.columns([6, 6, 6])  # middle spacer
+    col_left, col_spacer, col_right = st.columns([1, 6, 1])  # middle spacer
     LOGO_WIDTH = 240  # smaller size
 
     with col_left:
