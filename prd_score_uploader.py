@@ -97,9 +97,9 @@ def generate_pdf(data, filename):
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
 
-        # Show note if average is below 7
+        # Show note if average is below 8 (changed from 7)
         avg_score = group["Total Score"].mean()
-        if avg_score < 7:
+        if avg_score < 8:
             low_text = "scope, coverage, or tech depth"
             pdf.set_font("Arial", style='I', size=9)
             pdf.set_text_color(255, 0, 0)
