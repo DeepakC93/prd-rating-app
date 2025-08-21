@@ -65,11 +65,7 @@ def get_color_by_score(score):
         return (255, 99, 71)    # red
 
 def generate_pdf(data, filename):
-    # Sort PRDs by their average total score
-    prd_order = data.groupby("PRD Name")["Total Score"].mean().sort_values().index
-    sorted_data = data.set_index("PRD Name").loc[prd_order].reset_index()
-
-    overall_avg = sorted_data['Total Score'].mean()
+    overall_avg = data['Total Score'].mean()
     color = get_color_by_score(overall_avg)
 
     pdf = FPDF(orientation='P', unit='mm', format='A4')
@@ -89,31 +85,56 @@ def generate_pdf(data, filename):
     pdf.set_text_color(0, 0, 0)
     pdf.ln(10)
 
-    for prd_name, group in sorted_data.groupby('PRD Name', sort=False):
+    # Sort PRDs by average score (low to high)
+    prd_order = data.groupby("PRD Name")["Total Score"].mean().sort_values().index
+    data = data.set_index("PRD Name").loc[prd_order].reset_index()
+
+    for prd_name, group in data.groupby('PRD Name'):
+        prd_avg = group['Total Score'].mean()
+
+        # PRD Title
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
 
-        # Note for low average
-        prd_avg = group["Total Score"].mean()
+        # Friendly note if average < 7
         if prd_avg < 7:
-            pdf.set_font("Arial", size=10)
-            pdf.set_text_color(255, 99, 71)
-            pdf.multi_cell(0, 6, f"💡 This PRD's average score is {prd_avg:.2f}, which is below 7. "
-                                  "Consider reviewing requirement coverage, technical depth, or design readiness.")
-            pdf.set_text_color(0, 0, 0)
+            lowest_params = {}
+            for param in weights.keys():
+                numeric_vals = pd.to_numeric(
+                    group[param].astype(str).str.extract(r'([\d.]+)')[0],
+                    errors='coerce'
+                )
+                avg_val = numeric_vals.mean()
+                if not pd.isna(avg_val):
+                    lowest_params[param] = avg_val
 
-        # Table
+            # Pick the 2 lowest scoring parameters
+            low_keys = sorted(lowest_params, key=lowest_params.get)[:2]
+            low_text = " and ".join(low_keys)
+
+            pdf.set_font("Arial", style='', size=9)
+            pdf.set_text_color(255, 99, 71)  # highlight red
+            pdf.multi_cell(0, 6,
+                f"Note: This PRD scored a bit low mainly due to **{low_text}**. "
+                "Improving these areas can really boost the score 🚀"
+            )
+            pdf.set_text_color(0, 0, 0)
+            pdf.ln(3)
+
         pdf.set_font("Arial", size=8)
+
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
+        # Table header
         pdf.set_fill_color(180, 200, 255)
         pdf.set_font("Arial", style='B', size=8)
         for col in col_names:
             pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
         pdf.ln()
 
+        # Table rows
         fill = False
         pdf.set_font("Arial", size=6)
         for _, row in group.iterrows():
@@ -147,32 +168,31 @@ def generate_pdf(data, filename):
                 pdf.set_fill_color(240, 240, 255)
                 pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
 
-        pdf.ln(10)
+        pdf.ln()
+        pdf.ln(8)  # spacing between tables
 
-        # Comments section
-        comments = group['Comments'].dropna().unique()
-        comments = [c.strip() for c in comments if c.strip()]
-        if comments:
+        # Show comments (bulleted)
+        comments = group['Comments'].dropna().astype(str).unique()
+        if len(comments) > 0:
             pdf.set_font("Arial", style='B', size=9)
-            pdf.cell(0, 6, "Comments:", ln=True)
+            pdf.cell(0, 8, "Reviewer Comments:", ln=True)
             pdf.set_font("Arial", size=8)
-            pdf.set_fill_color(245, 245, 245)
             for c in comments:
-                pdf.multi_cell(0, 6, f"- {c}", fill=True)
+                pdf.multi_cell(0, 6, f"• {c}")
             pdf.ln(5)
-
-        pdf.ln(8)
 
     pdf.output(filename)
 
 # Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
 
-logo = Image.open("logo.png")
-with st.container():
-    st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
-    st.image(logo, width=150)
-    st.markdown("</div>", unsafe_allow_html=True)
+# Add two logos: left and right
+col1, col2, col3 = st.columns([1,6,1])
+with col1:
+    st.image("logo.png", width=100)
+with col3:
+    if os.path.exists("Marrow.png"):
+        st.image("Marrow.png", width=100)
 
 st.title("📊 PRD Rating Report Generator")
 st.markdown("Upload the PRD score sheet (CSV or Excel) and get the report in PDF format.")
