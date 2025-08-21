@@ -38,7 +38,7 @@ weights = {
     "Tech depth": 2,
 }
 
-# Precompute max possible score per parameter (for impact calculation)
+# Precompute max possible score per parameter
 param_max = {k: max(score_map[k].values()) for k in weights.keys()}
 
 def convert_to_score(row):
@@ -68,24 +68,14 @@ def get_color_by_score(score):
         return (255, 99, 71)    # red
 
 def _s(text):
-    """Sanitize text so FPDF (latin-1) won't crash on unicode."""
     return str(text).encode("latin-1", "ignore").decode("latin-1")
 
 def _avg_numeric_from_display(series):
-    """
-    Given a series like ["Fully covered (2)", "Partially covered (0.5)", ...]
-    return the mean of the numeric parts.
-    """
     s = series.astype(str).str.extract(r'([\d.]+)')[0]
     nums = pd.to_numeric(s, errors='coerce')
     return nums.mean()
 
 def _lowest_params_by_impact(group, top_k=3):
-    """
-    Determine which parameters contributed most to a lower score for this PRD group.
-    We compute avg_value / max_possible and sort ascending (worst first).
-    Returns a list of parameter names (up to top_k).
-    """
     scores = []
     for p in weights.keys():
         try:
@@ -93,12 +83,10 @@ def _lowest_params_by_impact(group, top_k=3):
         except Exception:
             avg_val = None
         if pd.isna(avg_val):
-            # If nothing present, treat as 0 to signal low coverage
             avg_val = 0.0
         max_possible = param_max.get(p, 1) or 1
         ratio = avg_val / max_possible
         scores.append((p, ratio))
-    # Sort by ratio ascending (lower ratio = bigger improvement opportunity)
     scores.sort(key=lambda x: x[1])
     return [p for p, _ in scores[:top_k]]
 
@@ -109,7 +97,6 @@ def generate_pdf(data, filename):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
 
-    # Logo
     logo_path = "logo.png"
     if os.path.exists(logo_path):
         pdf.image(logo_path, x=10, y=10, w=30)
@@ -123,26 +110,22 @@ def generate_pdf(data, filename):
     pdf.set_text_color(0, 0, 0)
     pdf.ln(10)
 
-    # Sort PRDs by average score before displaying (low -> high)
+    # Sort PRDs
     prd_avg = data.groupby("PRD Name")["Total Score"].mean().sort_values()
     sorted_prds = prd_avg.index.tolist()
 
     for prd_name in sorted_prds:
         group = data[data["PRD Name"] == prd_name]
 
-        # PRD header
+        # Header
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=_s(f"PRD: {prd_name}"), ln=True, fill=True)
 
-        # PRD avg and friendly note if below 8
         avg_score = group["Total Score"].mean()
         if avg_score < 8:
             low_params = _lowest_params_by_impact(group, top_k=3)
-            if low_params:
-                human_list = ", ".join(low_params)
-            else:
-                human_list = "a few parameters"
+            human_list = ", ".join(low_params) if low_params else "a few parameters"
             pdf.set_font("Arial", style='I', size=9)
             pdf.set_text_color(255, 0, 0)
             pdf.multi_cell(
@@ -156,20 +139,19 @@ def generate_pdf(data, filename):
             pdf.set_text_color(0, 0, 0)
 
         # Table
-        pdf.set_font("Arial", size=9)
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
         # Header row
         pdf.set_fill_color(180, 200, 255)
-        pdf.set_font("Arial", style='B', size=9)
+        pdf.set_font("Arial", style='B', size=8.5)  # slightly smaller headers
         for col in col_names:
             pdf.cell(col_width, 8, _s(col), border=1, align='C', fill=True)
         pdf.ln()
 
-        # Data rows
+        # Data rows (smaller font to avoid cropping)
         fill = False
-        pdf.set_font("Arial", size=8)
+        pdf.set_font("Arial", size=7.2)  # <<< reduced font size for rows only
         for _, row in group.iterrows():
             for col in col_names:
                 value = str(row.get(col, ''))
@@ -178,13 +160,12 @@ def generate_pdf(data, filename):
             fill = not fill
 
         # Average row
-        pdf.set_font("Arial", style='B', size=9)
+        pdf.set_font("Arial", style='B', size=8)
         pdf.set_fill_color(220, 220, 250)
         pdf.cell(col_width, 8, _s("Average"), border=1, align='C', fill=True)
 
         for col in col_names[1:]:
             try:
-                # Extract numeric values even from "Text (num)"
                 avg_val = _avg_numeric_from_display(group[col])
                 if pd.isna(avg_val):
                     pdf.set_fill_color(240, 240, 255)
@@ -203,19 +184,19 @@ def generate_pdf(data, filename):
         pdf.ln()
         pdf.ln(4)
 
-        # Comments block (bulleted)
+        # Comments
         comments = group["Comments"].dropna().astype(str).str.strip()
         comments = comments[comments != '']
         if not comments.empty:
             pdf.set_font("Arial", style='B', size=9)
-            pdf.set_fill_color(255, 250, 205)  # light yellow box
+            pdf.set_fill_color(255, 250, 205)
             pdf.cell(0, 7, _s("Reviewer Comments"), ln=True, fill=True)
             pdf.set_font("Arial", size=8)
             for c in comments.unique().tolist():
                 pdf.multi_cell(0, 5, _s(f"- {c}"))
             pdf.ln(2)
 
-        pdf.ln(8)  # spacing between PRDs
+        pdf.ln(8)
 
     pdf.output(filename)
 
@@ -223,7 +204,7 @@ def generate_pdf(data, filename):
 
 st.set_page_config(page_title="PRD Rating Report Generator")
 
-# Top logo (centered)
+# Top logo
 if os.path.exists("logo.png"):
     logo = Image.open("logo.png")
     with st.container():
@@ -231,7 +212,7 @@ if os.path.exists("logo.png"):
         with col2:
             st.image(logo, width=150)
 
-# Right-side branding logo (Marrow.png)
+# Right-side branding logo
 st.markdown(
     """
     <style>
@@ -258,13 +239,11 @@ st.markdown("Upload the PRD score sheet (CSV or Excel) and get the report in PDF
 uploaded_file = st.file_uploader("Upload PRD Rating Sheet", type=["csv", "xlsx"])
 
 if uploaded_file is not None:
-    # Read file
     if uploaded_file.name.endswith(".csv"):
         df = pd.read_csv(uploaded_file)
     else:
         df = pd.read_excel(uploaded_file)
 
-    # Normalize headers
     df.columns = df.columns.str.strip().str.lower()
     rename_dict = {}
     for col in df.columns:
@@ -274,12 +253,10 @@ if uploaded_file is not None:
                 break
     df.rename(columns=rename_dict, inplace=True)
 
-    # Normalize values for mapped columns
     for canon in weights.keys():
         if canon in df.columns:
             df[canon] = df[canon].astype(str).str.strip().str.lower()
 
-    # Ensure required fields
     if 'PRD Name' in df.columns:
         df['PRD Name'] = df['PRD Name'].astype(str).str.strip()
     else:
@@ -295,7 +272,6 @@ if uploaded_file is not None:
 
     st.success("File uploaded and normalized!")
 
-    # Compute scores
     all_scores = []
     for idx, row in df.iterrows():
         scores, total = convert_to_score(row)
@@ -308,7 +284,6 @@ if uploaded_file is not None:
     result_df = pd.DataFrame(all_scores)
     result_df = result_df[['PRD Name', 'Role'] + list(weights.keys()) + ['Total Score', 'Comments']]
 
-    # PDF
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         generate_pdf(result_df, tmp.name)
         with open(tmp.name, "rb") as f:
@@ -321,7 +296,6 @@ if uploaded_file is not None:
             )
         os.unlink(tmp.name)
 
-    # Streamlit Summary
     st.subheader("📊 Summary of PRD Scores")
     prd_summary = result_df.groupby("PRD Name")[["Total Score"]].mean().reset_index()
     prd_summary.columns = ["PRD Name", "Average Score"]
