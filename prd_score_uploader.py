@@ -207,7 +207,7 @@ st.set_page_config(page_title="PRD Rating Report Generator")
 # Top logos aligned left & right
 with st.container():
     col_left, col_spacer, col_right = st.columns([1, 6, 1])  # middle spacer
-    LOGO_WIDTH = 80  # smaller size
+    LOGO_WIDTH = 160  # smaller size
 
     with col_left:
         if os.path.exists("combo (1).png"):
