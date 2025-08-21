@@ -97,6 +97,7 @@ def generate_pdf(data, filename):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
 
+    # Top-left logo in PDF (optional if file exists)
     logo_path = "logo.png"
     if os.path.exists(logo_path):
         pdf.image(logo_path, x=10, y=10, w=30)
@@ -110,18 +111,19 @@ def generate_pdf(data, filename):
     pdf.set_text_color(0, 0, 0)
     pdf.ln(10)
 
-    # Sort PRDs
+    # Sort PRDs by rising average Total Score
     prd_avg = data.groupby("PRD Name")["Total Score"].mean().sort_values()
     sorted_prds = prd_avg.index.tolist()
 
     for prd_name in sorted_prds:
         group = data[data["PRD Name"] == prd_name]
 
-        # Header
+        # PRD header
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=_s(f"PRD: {prd_name}"), ln=True, fill=True)
 
+        # Friendly note for PRDs below 8
         avg_score = group["Total Score"].mean()
         if avg_score < 8:
             low_params = _lowest_params_by_impact(group, top_k=3)
@@ -149,7 +151,7 @@ def generate_pdf(data, filename):
             pdf.cell(col_width, 8, _s(col), border=1, align='C', fill=True)
         pdf.ln()
 
-        # Data rows (font size reduced to 6)
+        # Data rows (font size reduced to 6 as requested)
         fill = False
         pdf.set_font("Arial", size=6)
         for _, row in group.iterrows():
@@ -204,34 +206,17 @@ def generate_pdf(data, filename):
 
 st.set_page_config(page_title="PRD Rating Report Generator")
 
-# Top logo
-if os.path.exists("logo.png"):
-    logo = Image.open("logo.png")
-    with st.container():
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.image(logo, width=150)
+# Top row: logo.png on the LEFT, Marrow.png on the RIGHT (same size)
+with st.container():
+    col_left, col_right = st.columns([1, 1])
+    LOGO_WIDTH = 150
 
-# Right-side branding logo
-st.markdown(
-    """
-    <style>
-        [data-testid="stSidebarNav"]::after {
-            content: "";
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background-image: url('Marrow.png');
-            background-size: contain;
-            height: 80px;
-            width: 120px;
-            background-repeat: no-repeat;
-            opacity: 0.9;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+    with col_left:
+        if os.path.exists("logo.png"):
+            st.image(Image.open("logo.png"), width=LOGO_WIDTH)
+    with col_right:
+        if os.path.exists("Marrow.png"):
+            st.image(Image.open("Marrow.png"), width=LOGO_WIDTH)
 
 st.title("📊 PRD Rating Report Generator")
 st.markdown("Upload the PRD score sheet (CSV or Excel) and get the report in PDF format.")
