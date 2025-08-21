@@ -85,45 +85,31 @@ def generate_pdf(data, filename):
     pdf.set_text_color(0, 0, 0)
     pdf.ln(10)
 
-    # Sort PRDs by average score (low to high)
-    prd_order = data.groupby("PRD Name")["Total Score"].mean().sort_values().index
-    data = data.set_index("PRD Name").loc[prd_order].reset_index()
+    # Sort PRDs by average score before displaying
+    prd_avg = data.groupby("PRD Name")["Total Score"].mean().sort_values()
+    sorted_prds = prd_avg.index.tolist()
 
-    for prd_name, group in data.groupby('PRD Name'):
-        prd_avg = group['Total Score'].mean()
+    for prd_name in sorted_prds:
+        group = data[data["PRD Name"] == prd_name]
 
         # PRD Title
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
 
-        # Friendly note if average < 7
-        if prd_avg < 7:
-            lowest_params = {}
-            for param in weights.keys():
-                numeric_vals = pd.to_numeric(
-                    group[param].astype(str).str.extract(r'([\d.]+)')[0],
-                    errors='coerce'
-                )
-                avg_val = numeric_vals.mean()
-                if not pd.isna(avg_val):
-                    lowest_params[param] = avg_val
-
-            # Pick the 2 lowest scoring parameters
-            low_keys = sorted(lowest_params, key=lowest_params.get)[:2]
-            low_text = " and ".join(low_keys)
-
-            pdf.set_font("Arial", style='', size=9)
-            pdf.set_text_color(255, 99, 71)  # highlight red
+        # Show note if average is below 7
+        avg_score = group["Total Score"].mean()
+        if avg_score < 7:
+            low_text = "scope, coverage, or tech depth"
+            pdf.set_font("Arial", style='I', size=9)
+            pdf.set_text_color(255, 0, 0)
             pdf.multi_cell(0, 6,
-                f"Note: This PRD scored a bit low mainly due to **{low_text}**. "
-                "Improving these areas can really boost the score 🚀"
+                f"Note: This PRD scored a bit low mainly due to {low_text}. "
+                "Improving these areas can really boost the score!"
             )
             pdf.set_text_color(0, 0, 0)
-            pdf.ln(3)
 
         pdf.set_font("Arial", size=8)
-
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
@@ -169,30 +155,51 @@ def generate_pdf(data, filename):
                 pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
 
         pdf.ln()
-        pdf.ln(8)  # spacing between tables
+        pdf.ln(4)
 
-        # Show comments (bulleted)
-        comments = group['Comments'].dropna().astype(str).unique()
-        if len(comments) > 0:
+        # Collect and show comments for this PRD
+        comments = group["Comments"].dropna().unique().tolist()
+        if comments:
             pdf.set_font("Arial", style='B', size=9)
             pdf.cell(0, 8, "Reviewer Comments:", ln=True)
             pdf.set_font("Arial", size=8)
             for c in comments:
-                pdf.multi_cell(0, 6, f"• {c}")
-            pdf.ln(5)
+                pdf.multi_cell(0, 6, f"- {c}")
+            pdf.ln(4)
+
+        pdf.ln(8)  # spacing between PRDs
 
     pdf.output(filename)
 
 # Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
 
-# Add two logos: left and right
-col1, col2, col3 = st.columns([1,6,1])
-with col1:
-    st.image("logo.png", width=100)
-with col3:
-    if os.path.exists("Marrow.png"):
-        st.image("Marrow.png", width=100)
+# Top logo
+logo = Image.open("logo.png")
+with st.container():
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image(logo, width=150)
+
+# Right side logo
+st.markdown(
+    """
+    <style>
+        [data-testid="stSidebarNav"]::after {
+            content: "";
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-image: url('Marrow.png');
+            background-size: contain;
+            height: 80px;
+            width: 120px;
+            background-repeat: no-repeat;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 st.title("📊 PRD Rating Report Generator")
 st.markdown("Upload the PRD score sheet (CSV or Excel) and get the report in PDF format.")
