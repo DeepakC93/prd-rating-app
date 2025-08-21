@@ -65,7 +65,11 @@ def get_color_by_score(score):
         return (255, 99, 71)    # red
 
 def generate_pdf(data, filename):
-    overall_avg = data['Total Score'].mean()
+    # Sort PRDs by their average total score
+    prd_order = data.groupby("PRD Name")["Total Score"].mean().sort_values().index
+    sorted_data = data.set_index("PRD Name").loc[prd_order].reset_index()
+
+    overall_avg = sorted_data['Total Score'].mean()
     color = get_color_by_score(overall_avg)
 
     pdf = FPDF(orientation='P', unit='mm', format='A4')
@@ -85,12 +89,12 @@ def generate_pdf(data, filename):
     pdf.set_text_color(0, 0, 0)
     pdf.ln(10)
 
-    for prd_name, group in data.groupby('PRD Name'):
+    for prd_name, group in sorted_data.groupby('PRD Name', sort=False):
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
 
-        # Note for low total average
+        # Note for low average
         prd_avg = group["Total Score"].mean()
         if prd_avg < 7:
             pdf.set_font("Arial", size=10)
@@ -99,18 +103,17 @@ def generate_pdf(data, filename):
                                   "Consider reviewing requirement coverage, technical depth, or design readiness.")
             pdf.set_text_color(0, 0, 0)
 
+        # Table
         pdf.set_font("Arial", size=8)
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
-        # Table header
         pdf.set_fill_color(180, 200, 255)
         pdf.set_font("Arial", style='B', size=8)
         for col in col_names:
             pdf.cell(col_width, 8, col, border=1, align='C', fill=True)
         pdf.ln()
 
-        # Table rows
         fill = False
         pdf.set_font("Arial", size=6)
         for _, row in group.iterrows():
@@ -144,21 +147,21 @@ def generate_pdf(data, filename):
                 pdf.set_fill_color(240, 240, 255)
                 pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
 
-        pdf.ln(10)  # space after table
+        pdf.ln(10)
 
-        # Comments section (highlighted)
+        # Comments section
         comments = group['Comments'].dropna().unique()
         comments = [c.strip() for c in comments if c.strip()]
         if comments:
             pdf.set_font("Arial", style='B', size=9)
             pdf.cell(0, 6, "Comments:", ln=True)
             pdf.set_font("Arial", size=8)
-            pdf.set_fill_color(245, 245, 245)  # light gray box
+            pdf.set_fill_color(245, 245, 245)
             for c in comments:
                 pdf.multi_cell(0, 6, f"- {c}", fill=True)
             pdf.ln(5)
 
-        pdf.ln(8)  # spacing between PRDs
+        pdf.ln(8)
 
     pdf.output(filename)
 
