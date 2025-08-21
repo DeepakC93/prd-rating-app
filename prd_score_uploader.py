@@ -144,14 +144,14 @@ def generate_pdf(data, filename):
 
         # Header row
         pdf.set_fill_color(180, 200, 255)
-        pdf.set_font("Arial", style='B', size=8.5)  # slightly smaller headers
+        pdf.set_font("Arial", style='B', size=8.5)
         for col in col_names:
             pdf.cell(col_width, 8, _s(col), border=1, align='C', fill=True)
         pdf.ln()
 
-        # Data rows (smaller font to avoid cropping)
+        # Data rows (font size reduced to 6)
         fill = False
-        pdf.set_font("Arial", size=7.2)  # <<< reduced font size for rows only
+        pdf.set_font("Arial", size=6)
         for _, row in group.iterrows():
             for col in col_names:
                 value = str(row.get(col, ''))
