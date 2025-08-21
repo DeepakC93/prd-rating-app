@@ -1,5 +1,3 @@
-# Updated full Python code with fixed average total coloring and increased spacing between tables
-
 import streamlit as st
 import pandas as pd
 from fpdf import FPDF
@@ -92,19 +90,16 @@ def generate_pdf(data, filename):
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=f"PRD: {prd_name}", ln=True, fill=True)
 
-        prd_avg = group['Total Score'].mean()
+        # Note for low total average
+        prd_avg = group["Total Score"].mean()
         if prd_avg < 7:
-            pdf.set_font("Arial", style='', size=9)
-            pdf.set_text_color(105, 105, 105)  # dark gray
-            pdf.multi_cell(0, 6,
-                "Note: This PRD has an average score below 7. "
-                "Consider reviewing requirement clarity, tech depth, or scope alignment for improvements.",
-                align='L'
-            )
+            pdf.set_font("Arial", size=10)
+            pdf.set_text_color(255, 99, 71)
+            pdf.multi_cell(0, 6, f"💡 This PRD's average score is {prd_avg:.2f}, which is below 7. "
+                                  "Consider reviewing requirement coverage, technical depth, or design readiness.")
             pdf.set_text_color(0, 0, 0)
 
         pdf.set_font("Arial", size=8)
-
         col_names = ['Role'] + list(weights.keys()) + ['Total Score']
         col_width = 195 / len(col_names)
 
@@ -149,11 +144,22 @@ def generate_pdf(data, filename):
                 pdf.set_fill_color(240, 240, 255)
                 pdf.cell(col_width, 8, "", border=1, align='C', fill=True)
 
-        pdf.ln()
-        pdf.ln(8)  # spacing between tables
+        pdf.ln(5)
+
+        # Comments section
+        comments = group['Comments'].dropna().unique()
+        comments = [c.strip() for c in comments if c.strip()]
+        if comments:
+            pdf.set_font("Arial", style='B', size=9)
+            pdf.cell(0, 6, "Comments:", ln=True)
+            pdf.set_font("Arial", size=8)
+            for c in comments:
+                pdf.multi_cell(0, 5, f"- {c}")
+            pdf.ln(3)
+
+        pdf.ln(8)  # spacing between PRDs
 
     pdf.output(filename)
-
 
 # Streamlit App
 st.set_page_config(page_title="PRD Rating Report Generator")
