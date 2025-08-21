@@ -97,7 +97,6 @@ def generate_pdf(data, filename):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
 
-    # Top-left logo in PDF (optional if file exists)
     logo_path = "logo.png"
     if os.path.exists(logo_path):
         pdf.image(logo_path, x=10, y=10, w=30)
@@ -111,19 +110,18 @@ def generate_pdf(data, filename):
     pdf.set_text_color(0, 0, 0)
     pdf.ln(10)
 
-    # Sort PRDs by rising average Total Score
+    # Sort PRDs
     prd_avg = data.groupby("PRD Name")["Total Score"].mean().sort_values()
     sorted_prds = prd_avg.index.tolist()
 
     for prd_name in sorted_prds:
         group = data[data["PRD Name"] == prd_name]
 
-        # PRD header
+        # Header
         pdf.set_font("Arial", style='B', size=12)
         pdf.set_fill_color(200, 220, 255)
         pdf.cell(200, 10, txt=_s(f"PRD: {prd_name}"), ln=True, fill=True)
 
-        # Friendly note for PRDs below 8
         avg_score = group["Total Score"].mean()
         if avg_score < 8:
             low_params = _lowest_params_by_impact(group, top_k=3)
@@ -146,14 +144,14 @@ def generate_pdf(data, filename):
 
         # Header row
         pdf.set_fill_color(180, 200, 255)
-        pdf.set_font("Arial", style='B', size=8.5)
+        pdf.set_font("Arial", style='B', size=8.5)  # headers
         for col in col_names:
             pdf.cell(col_width, 8, _s(col), border=1, align='C', fill=True)
         pdf.ln()
 
-        # Data rows (font size reduced to 6 as requested)
+        # Data rows (font size 6 for individual ratings)
         fill = False
-        pdf.set_font("Arial", size=6)
+        pdf.set_font("Arial", size=6)  # <<< changed to 6
         for _, row in group.iterrows():
             for col in col_names:
                 value = str(row.get(col, ''))
@@ -206,14 +204,15 @@ def generate_pdf(data, filename):
 
 st.set_page_config(page_title="PRD Rating Report Generator")
 
-# Top row: logo.png on the LEFT, Marrow.png on the RIGHT (same size)
+# Top logos aligned left & right
 with st.container():
-    col_left, col_right = st.columns([1, 1])
-    LOGO_WIDTH = 150
+    col_left, col_spacer, col_right = st.columns([1, 6, 1])  # middle spacer
+    LOGO_WIDTH = 80  # smaller size
 
     with col_left:
         if os.path.exists("logo.png"):
             st.image(Image.open("logo.png"), width=LOGO_WIDTH)
+
     with col_right:
         if os.path.exists("Marrow.png"):
             st.image(Image.open("Marrow.png"), width=LOGO_WIDTH)
@@ -288,3 +287,4 @@ if uploaded_file is not None:
 
     st.subheader("🔍 Converted Score Table")
     st.dataframe(result_df)
+
