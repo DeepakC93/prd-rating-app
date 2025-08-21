@@ -210,8 +210,8 @@ with st.container():
     LOGO_WIDTH = 80  # smaller size
 
     with col_left:
-        if os.path.exists("Combo.png"):
-            st.image(Image.open("Combo.png"), width=LOGO_WIDTH)
+        if os.path.exists("combo (1).png"):
+            st.image(Image.open("combo (1).png"), width=LOGO_WIDTH)
 
 
 st.title("📊 PRD Rating Report Generator")
