@@ -132,8 +132,8 @@ def generate_pdf(data, filename):
                 0, 6,
                 _s(
                     f"Note: This PRD averaged {avg_score:.2f}. "
-                    f"The best lift will likely come from strengthening: {human_list}. "
-                    "Focusing on these areas should raise the score next round."
+                    f"This was due to lower scores in: {human_list}. "
+
                 )
             )
             pdf.set_text_color(0, 0, 0)
