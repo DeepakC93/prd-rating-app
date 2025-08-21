@@ -210,12 +210,9 @@ with st.container():
     LOGO_WIDTH = 80  # smaller size
 
     with col_left:
-        if os.path.exists("logo.png"):
-            st.image(Image.open("logo.png"), width=LOGO_WIDTH)
+        if os.path.exists("combo.png"):
+            st.image(Image.open("combo.png"), width=LOGO_WIDTH)
 
-    with col_right:
-        if os.path.exists("Marrow.png"):
-            st.image(Image.open("Marrow.png"), width=LOGO_WIDTH)
 
 st.title("📊 PRD Rating Report Generator")
 st.markdown("Upload the PRD score sheet (CSV or Excel) and get the report in PDF format.")
